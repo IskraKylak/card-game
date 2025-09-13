@@ -11,9 +11,10 @@ public class Card {
     private final int manaCost; // Стоимость (мана/ресурсы)
     private final Faction faction;
     private final CardEffect effect; // Эффект карты
+    private final String imagePath; // Путь к изображению карты
 
     public Card(int id, String name, String description, int manaCost, CardType type, Faction faction,
-            CardEffect effect) {
+            CardEffect effect, String imagePath) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -21,6 +22,11 @@ public class Card {
         this.type = type;
         this.faction = faction;
         this.effect = effect;
+        this.imagePath = imagePath;
+    }
+
+    public String getImagePath() {
+        return imagePath;
     }
 
     // --- Геттеры ---

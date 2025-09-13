@@ -118,7 +118,8 @@ public class Player {
           c.getCost(),
           c.getType(),
           c.getFaction(),
-          c.getEffect());
+          c.getEffect(),
+          c.getImagePath());
       defaultDeck.add(copy);
     }
   }
