@@ -13,6 +13,7 @@ public class Player {
 
   private int maxMana;
   private int mana;
+  private int startingHandSize = 4;
 
   // Колоды
   private List<Card> defaultDeck; // шаблонная колода персонажа
@@ -46,6 +47,31 @@ public class Player {
     this.slots = new ArrayList<>();
     for (int i = 0; i < maxUnits; i++) {
       this.slots.add(new Slot(i));
+    }
+  }
+
+  public void initBattle() {
+    // обнуление боевых данных
+    hand.clear();
+    discard.clear();
+    health = maxHealth;
+    mana = maxMana;
+
+    // очищаем слоты
+    for (Slot slot : slots) {
+      slot.removeUnit();
+    }
+
+    // создаём боевую колоду из дефолтной
+    battleDeck.clear();
+    for (Card c : defaultDeck) {
+      battleDeck.add(c);
+    }
+    Collections.shuffle(battleDeck);
+
+    // берём стартовую руку
+    for (int i = 0; i < startingHandSize; i++) {
+      drawCard();
     }
   }
 

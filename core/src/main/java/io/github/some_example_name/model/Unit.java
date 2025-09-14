@@ -6,18 +6,24 @@ public class Unit {
   private int health;
   private int maxHealth;
   private int attack;
+  private String spriteFolder;
 
-  public Unit(int id, String name, int health, int attack) {
+  public Unit(int id, String name, int health, int attack, String spriteFolder) {
     this.id = id;
     this.name = name;
     this.health = health;
     this.maxHealth = health; // устанавливаем maxHealth равным стартовому здоровью
     this.attack = attack;
+    this.spriteFolder = spriteFolder; // Путь к изображению по умолчанию
   }
 
   // --- getters ---
   public int getId() {
     return id;
+  }
+
+  public String getSpriteFolder() {
+    return spriteFolder;
   }
 
   public String getName() {

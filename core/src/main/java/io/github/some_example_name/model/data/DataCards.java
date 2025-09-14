@@ -15,8 +15,8 @@ public class DataCards {
 
                 cards.add(new Card(
                                 1,
-                                "Призыв Скваер",
-                                "Скваер - абсолютный лох",
+                                "Squeer's Call",
+                                "Squier is a total loser",
                                 1,
                                 CardType.UNIT,
                                 Faction.LIFE,
@@ -24,8 +24,8 @@ public class DataCards {
                                 "game/card-unit3.png"));
                 cards.add(new Card(
                                 2,
-                                "Призыв воина",
-                                "Воин - средний боец",
+                                "Summon a Warrior",
+                                "Warrior - average fighter",
                                 2,
                                 CardType.UNIT,
                                 Faction.LIFE,
@@ -33,8 +33,8 @@ public class DataCards {
                                 "game/card-unit2.png"));
                 cards.add(new Card(
                                 3,
-                                "Призыв Рицаря",
-                                "Самий крутой пока чел",
+                                "Summoning the Knight",
+                                "The coolest guy so far",
                                 3,
                                 CardType.UNIT,
                                 Faction.LIFE,
@@ -52,8 +52,8 @@ public class DataCards {
                         case LIFE:
                                 cards.add(new Card(
                                                 1,
-                                                "Призыв Скваер",
-                                                "Скваер - абсолютный лох",
+                                                "Squeer's Call",
+                                                "Squier is a total loser",
                                                 1,
                                                 CardType.UNIT,
                                                 Faction.LIFE,
@@ -62,8 +62,8 @@ public class DataCards {
                                 ));
                                 cards.add(new Card(
                                                 2,
-                                                "Призыв воина",
-                                                "Воин - средний боец",
+                                                "Summon a Warrior",
+                                                "Warrior - average fighter",
                                                 2,
                                                 CardType.UNIT,
                                                 Faction.LIFE,
@@ -71,8 +71,8 @@ public class DataCards {
                                                 "game/card-unit2.png"));
                                 cards.add(new Card(
                                                 3,
-                                                "Призыв Рицаря",
-                                                "Самий крутой пока чел",
+                                                "Summoning the Knight",
+                                                "The coolest guy so far",
                                                 3,
                                                 CardType.UNIT,
                                                 Faction.LIFE,

@@ -8,27 +8,30 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
-import io.github.some_example_name.model.Player;
+import io.github.some_example_name.core.GameContext;
+import io.github.some_example_name.core.GameEngine;
 import io.github.some_example_name.ui.panels.BoardUI;
 import io.github.some_example_name.ui.panels.PlayerPanelUI;
-
-import com.badlogic.gdx.scenes.scene2d.ui.Value;
 
 public class BattleScreenUI extends ScreenAdapter {
 
   private Stage stage;
   private BoardUI boardUI;
   private PlayerPanelUI playerPanelUI;
-  private Player player; // добавляем ссылку на игрока
+  private final GameContext context;
+  private final GameEngine engine;
 
-  public BattleScreenUI(Player player, Skin skin) {
+  public BattleScreenUI(GameContext context, GameEngine engine, Skin skin) {
+    this.context = context;
+    this.engine = engine;
+
+    context.getPlayer().initBattle();
+
     stage = new Stage(new ScreenViewport());
     Gdx.input.setInputProcessor(stage);
 
-    this.player = player;
-
-    boardUI = new BoardUI();
-    playerPanelUI = new PlayerPanelUI(player, skin);
+    boardUI = new BoardUI(context, engine, skin);
+    playerPanelUI = new PlayerPanelUI(context, engine, skin);
 
     Table root = new Table();
     root.setFillParent(true);

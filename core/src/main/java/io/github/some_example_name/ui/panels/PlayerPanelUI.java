@@ -5,6 +5,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
+import io.github.some_example_name.core.GameContext;
+import io.github.some_example_name.core.GameEngine;
 import io.github.some_example_name.model.Player;
 import io.github.some_example_name.ui.elements.DeckUI;
 import io.github.some_example_name.ui.elements.DiscardUI;
@@ -15,11 +17,19 @@ import com.badlogic.gdx.graphics.Texture;
 
 public class PlayerPanelUI extends Table {
 
-  private final Player player;
+  private final GameContext context;
   private final HandUI handUI;
+  private final DeckUI deckUI;
+  private final DiscardUI discardUI;
+  private final StatusPanelUI statusPanelUI;
+  private final GameEngine engine;
 
-  public PlayerPanelUI(Player player, Skin skin) {
-    this.player = player;
+  public PlayerPanelUI(GameContext context, GameEngine engine, Skin skin) {
+    this.context = context;
+    this.engine = engine;
+
+    // получаем текущего игрока из контекста
+    Player player = context.getPlayer();
 
     // зелёный фон
     Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -27,14 +37,13 @@ public class PlayerPanelUI extends Table {
     pixmap.fill();
     Texture texture = new Texture(pixmap);
     pixmap.dispose();
-
     this.setBackground(new TextureRegionDrawable(texture));
 
-    // Подпанели
-    DeckUI deckUI = new DeckUI(player, skin);
+    // Подпанели (все работают через игрока, которого берём из контекста)
+    deckUI = new DeckUI(player, skin);
     handUI = new HandUI(player, skin);
-    DiscardUI discardUI = new DiscardUI(player, skin);
-    StatusPanelUI statusPanelUI = new StatusPanelUI(player, skin);
+    discardUI = new DiscardUI(player, skin);
+    statusPanelUI = new StatusPanelUI(player, skin);
 
     // Верхняя строка (колода - рука - отбой)
     Table topRow = new Table();
@@ -49,8 +58,11 @@ public class PlayerPanelUI extends Table {
 
   // метод для обновления UI после изменения модели
   public void refresh() {
+    // всегда берём игрока из контекста
+    Player player = context.getPlayer();
+
     handUI.update();
-    // deckUI.update(); // можно добавить, если DeckUI будет динамический
+    // deckUI.update(); // можно добавить при динамическом отображении
     // discardUI.update(); // аналогично
     // statusPanelUI.update();
   }
