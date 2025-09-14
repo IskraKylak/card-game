@@ -8,12 +8,18 @@ public class Enemy {
   private int maxHealth; // добавим максимум, чтобы нельзя было перебить
 
   private int attackPower;
+  private String spriteFolder;
 
-  public Enemy(String name, int health, int attackPower) {
+  public Enemy(String name, int health, int attackPower, String spriteFolder) {
     this.name = name;
     this.health = health;
     this.maxHealth = health; // максимальное здоровье равно стартовому
     this.attackPower = attackPower;
+    this.spriteFolder = spriteFolder;
+  }
+
+  public String getSpriteFolder() {
+    return spriteFolder;
   }
 
   // --- getters ---

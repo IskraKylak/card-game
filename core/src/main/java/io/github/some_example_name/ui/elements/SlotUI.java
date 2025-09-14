@@ -29,4 +29,8 @@ public class SlotUI extends Table {
       contentLabel.setText("Empty");
     }
   }
+
+  public Slot getSlot() {
+    return slot;
+  }
 }

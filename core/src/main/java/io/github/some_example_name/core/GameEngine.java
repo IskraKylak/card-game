@@ -46,6 +46,51 @@ public class GameEngine {
     // Пока этого не делаем
   }
 
+  // --- Разыграть карту игрока на цель ---
+  public boolean playCardOnTarget(Card card, Object target) {
+    Player player = context.getPlayer();
+
+    // Проверяем ману
+    if (player.getMana() < card.getCost()) {
+      System.out.println("Недостаточно маны для розыгрыша карты: " + card.getName());
+      return false;
+    }
+
+    // --- Цель: слот ---
+    if (target instanceof Slot) {
+      Slot slot = (Slot) target;
+
+      // Если карта — юнит
+      if (card.getType() == CardType.UNIT) {
+        if (!slot.isOccupied()) {
+          System.out.println("Игрок разыгрывает карту-юнита: " + card.getName() + " в слот " + slot.getId());
+
+          // Запускаем эффект карты
+          card.play(context, slot);
+
+          // Списываем ману
+          player.setMana(player.getMana() - card.getCost());
+
+          // Отправляем карту в отбой
+          player.playCard(card);
+
+          return true;
+        } else {
+          System.out.println("Слот " + slot.getId() + " занят, нельзя разыграть юнита.");
+          return false;
+        }
+      }
+
+      // Если карта НЕ юнит → пока ничего не делаем
+      System.out.println("Карта " + card.getName() + " не может быть разыграна на слот.");
+      return false;
+    }
+
+    // --- Цель неизвестна ---
+    System.out.println("Неверная цель для карты: " + card.getName());
+    return false;
+  }
+
   // --- Игрок разыгрывает карты ---
   public void playPlayerHand() {
     Player player = context.getPlayer();
@@ -107,6 +152,20 @@ public class GameEngine {
     }
 
     removeDeadUnits();
+  }
+
+  // Файл: GameEngine.java
+  public void unitAttack(Unit unit, Enemy enemy) {
+    if (!unit.isAlive() || !enemy.isAlive())
+      return;
+
+    // Юнит наносит урон врагу
+    enemy.takeDamage(unit.getAttack());
+
+    // Враг контратакует
+    if (enemy.isAlive()) {
+      unit.takeDamage(enemy.getAttackPower());
+    }
   }
 
   // --- Ход врага ---

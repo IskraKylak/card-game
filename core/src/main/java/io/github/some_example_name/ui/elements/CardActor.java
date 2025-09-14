@@ -2,53 +2,50 @@ package io.github.some_example_name.ui.elements;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener;
-
 import io.github.some_example_name.model.Card;
+import io.github.some_example_name.ui.BattleScreenUI;
 
 public class CardActor extends Table {
-  private Card card;
-  private float grabOffsetX, grabOffsetY; // смещение при захвате
-  private float startX, startY; // начальная позиция
+  private final Card card;
+  private float grabOffsetX, grabOffsetY;
+  private float startX, startY;
+  private final BattleScreenUI battleScreenUI;
 
-  public CardActor(Card card, Skin skin) {
+  public CardActor(Card card, Skin skin, BattleScreenUI battleScreenUI) {
     this.card = card;
+    this.battleScreenUI = battleScreenUI;
 
-    // картинка
+    // Картинка
     Texture texture = new Texture(card.getImagePath());
     Image cardImage = new Image(new TextureRegion(texture));
 
-    // название
+    // Название и описание
     Label nameLabel = new Label(card.getName(), skin);
-    // мана
     Label costLabel = new Label("Mana: " + card.getCost(), skin);
-    // описание
-    Label descLabel = new Label(card.getDescription(), skin);
-    descLabel.setWrap(true);
+    // Label descLabel = new Label(card.getDescription(), skin);
+    // descLabel.setWrap(true);
 
-    // собираем UI
+    // Сборка UI
     this.add(cardImage).size(100, 150).row();
     this.add(nameLabel).row();
     this.add(costLabel).row();
-    this.add(descLabel).width(100).row();
+    // this.add(descLabel).width(100).row();
 
-    // --- Логика перетаскивания ---
-    // перетаскивание
+    // DragListener
     this.addListener(new DragListener() {
       @Override
       public void dragStart(InputEvent event, float x, float y, int pointer) {
         grabOffsetX = x;
         grabOffsetY = y;
-
-        // запоминаем стартовую позицию
         startX = getX();
         startY = getY();
-
         toFront(); // карта наверх
       }
 
@@ -59,14 +56,17 @@ public class CardActor extends Table {
 
       @Override
       public void dragStop(InputEvent event, float x, float y, int pointer) {
-        // TODO: тут можно проверить "зону сброса" (поле боя)
-        // пока возвращаем обратно
-        setPosition(startX, startY);
+        Vector2 stageCoords = localToStageCoordinates(new Vector2(getWidth() / 2, getHeight() / 2));
+        battleScreenUI.onCardDropped(CardActor.this, stageCoords.x, stageCoords.y);
       }
     });
   }
 
   public Card getCard() {
     return card;
+  }
+
+  public void resetPosition() {
+    setPosition(startX, startY);
   }
 }

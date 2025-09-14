@@ -6,13 +6,13 @@ import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
-import io.github.some_example_name.model.Unit;
+import io.github.some_example_name.model.Enemy;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class UnitUI extends Table {
-  private final Unit unit;
+public class EnemyUI extends Table {
+  private final Enemy enemy;
   private final Skin skin;
 
   private Animation<TextureRegion> idleAnimation;
@@ -25,11 +25,11 @@ public class UnitUI extends Table {
   private Label attackLabel;
   private Label hpLabel;
 
-  public UnitUI(Unit unit, Skin skin) {
-    this.unit = unit;
+  public EnemyUI(Enemy enemy, Skin skin) {
+    this.enemy = enemy;
     this.skin = skin;
 
-    String spriteFolder = unit.getSpriteFolder();
+    String spriteFolder = enemy.getSpriteFolder();
 
     idleAnimation = loadAnimation(spriteFolder, "idle", 0.2f, Animation.PlayMode.LOOP);
     attackAnimation = loadAnimation(spriteFolder, "attack", 0.1f, Animation.PlayMode.NORMAL);
@@ -41,15 +41,19 @@ public class UnitUI extends Table {
     unitImage.setSize(80, 120);
 
     // Лейблы
-    nameLabel = new Label(unit.getName(), skin);
-    attackLabel = new Label("ATK: " + unit.getAttack(), skin);
-    hpLabel = new Label("HP: " + unit.getHealth(), skin);
+    nameLabel = new Label(enemy.getName(), skin);
+    attackLabel = new Label("ATK: " + enemy.getAttackPower(), skin);
+    hpLabel = new Label("HP: " + enemy.getHealth(), skin);
 
     // Добавляем в Table: спрайт сверху, лейблы снизу
-    this.add(unitImage).size(80, 120).row();
+    this.add(unitImage).size(100, 120).row();
     this.add(nameLabel).padTop(2).row();
     this.add(attackLabel).padTop(2).row();
     this.add(hpLabel).padTop(2).row();
+  }
+
+  public void refreshHP() {
+    hpLabel.setText("HP: " + enemy.getHealth());
   }
 
   private Animation<TextureRegion> loadAnimation(String folder, String prefix, float frameDuration,
@@ -87,7 +91,7 @@ public class UnitUI extends Table {
     stateTime = 0f;
   }
 
-  public Unit getUnit() {
-    return unit;
+  public Enemy getEnemy() {
+    return enemy;
   }
 }

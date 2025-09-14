@@ -8,6 +8,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import io.github.some_example_name.core.GameContext;
 import io.github.some_example_name.core.GameEngine;
 import io.github.some_example_name.model.Player;
+import io.github.some_example_name.ui.BattleScreenUI;
 import io.github.some_example_name.ui.elements.DeckUI;
 import io.github.some_example_name.ui.elements.DiscardUI;
 import io.github.some_example_name.ui.elements.HandUI;
@@ -21,12 +22,14 @@ public class PlayerPanelUI extends Table {
   private final HandUI handUI;
   private final DeckUI deckUI;
   private final DiscardUI discardUI;
-  private final StatusPanelUI statusPanelUI;
-  private final GameEngine engine;
 
-  public PlayerPanelUI(GameContext context, GameEngine engine, Skin skin) {
+  private final GameEngine engine;
+  private final BattleScreenUI battleScreenUI;
+
+  public PlayerPanelUI(GameContext context, GameEngine engine, Skin skin, BattleScreenUI battleScreenUI) {
     this.context = context;
     this.engine = engine;
+    this.battleScreenUI = battleScreenUI;
 
     // получаем текущего игрока из контекста
     Player player = context.getPlayer();
@@ -41,9 +44,8 @@ public class PlayerPanelUI extends Table {
 
     // Подпанели (все работают через игрока, которого берём из контекста)
     deckUI = new DeckUI(player, skin);
-    handUI = new HandUI(player, skin);
+    handUI = new HandUI(player, skin, battleScreenUI);
     discardUI = new DiscardUI(player, skin);
-    statusPanelUI = new StatusPanelUI(player, skin);
 
     // Верхняя строка (колода - рука - отбой)
     Table topRow = new Table();
@@ -53,7 +55,7 @@ public class PlayerPanelUI extends Table {
 
     // Добавляем всё в PlayerPanel
     this.add(topRow).expand().fill().row();
-    this.add(statusPanelUI).right().pad(10).row();
+
   }
 
   // метод для обновления UI после изменения модели
@@ -62,8 +64,7 @@ public class PlayerPanelUI extends Table {
     Player player = context.getPlayer();
 
     handUI.update();
-    // deckUI.update(); // можно добавить при динамическом отображении
-    // discardUI.update(); // аналогично
-    // statusPanelUI.update();
+    deckUI.update(); // можно добавить при динамическом отображении
+    discardUI.update(); // аналогично
   }
 }

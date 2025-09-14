@@ -26,15 +26,15 @@ public class DataUnits {
   }
 
   public static Unit createScuaer() {
-    return new Unit(generateUniqueId(), "Squire", 4, 1, "game/unit/squire");
+    return new Unit(generateUniqueId(), "Squire", 4, 1, "game/units/squire");
   }
 
   public static Unit createArcher() {
-    return new Unit(generateUniqueId(), "Warrior", 2, 4, "game/unit/warrior");
+    return new Unit(generateUniqueId(), "Warrior", 2, 4, "game/units/warrior");
   }
 
   public static Unit createSwordsman() {
-    return new Unit(generateUniqueId(), "Infantryman", 4, 2, "game/unit/infantryman");
+    return new Unit(generateUniqueId(), "Infantryman", 4, 2, "game/units/infantryman");
   }
 
   // Получение нового экземпляра юнита по id

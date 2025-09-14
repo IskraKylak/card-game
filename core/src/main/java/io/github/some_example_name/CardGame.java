@@ -24,7 +24,7 @@ public class CardGame extends Game {
     player.initBattleDeck();
 
     // Создаём врага
-    Enemy enemy = DataEnemy.createMage();
+    Enemy enemy = DataEnemy.createOrc();
 
     // Контекст игры (например, 6 слотов)
     GameContext context = new GameContext(player, enemy);
