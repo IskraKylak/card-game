@@ -18,7 +18,7 @@ public class Lwjgl3Launcher {
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setTitle("TestGame");
-        config.setWindowedMode(1600, 900); // фіксований розмір
+        config.setWindowedMode(1920, 1080); // фіксований розмір
         config.setResizable(false); // заборона зміни розміру вікна
         config.useVsync(true);
         config.setForegroundFPS(60);

@@ -1,13 +1,12 @@
 package io.github.some_example_name.ui.panels;
 
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.math.Vector2;
 
 import java.util.ArrayList;
@@ -31,18 +30,20 @@ public class BoardUI extends Table {
   private Table slotsRow;
   private Label playerLabel;
 
+  // Статический фон
+  private Image backgroundImage;
+
   public BoardUI(GameContext context, GameEngine engine, Skin skin) {
     this.context = context;
     this.engine = engine;
     this.skin = skin;
 
-    // фон
-    Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-    pixmap.setColor(Color.BLUE);
-    pixmap.fill();
-    Texture texture = new Texture(pixmap);
-    pixmap.dispose();
-    this.setBackground(new TextureRegionDrawable(texture));
+    // Загружаем статический фон
+    Texture backgroundTexture = new Texture("game/board/Board.png"); // используем одну картинку
+    backgroundImage = new Image(backgroundTexture);
+    backgroundImage.setScaling(Scaling.fill); // масштабируем под весь экран, сохраняя пропорции
+    backgroundImage.setFillParent(true);
+    this.addActor(backgroundImage);
 
     Player player = context.getPlayer();
     Enemy enemy = context.getEnemy();
@@ -51,14 +52,14 @@ public class BoardUI extends Table {
     enemyUI = new EnemyUI(enemy, skin);
     this.add(enemyUI).expandX().top().center().padTop(10).row();
 
-    // пустое пространство
+    // Пустое пространство
     this.add().expand().row();
 
     // Слоты игрока
     slotsRow = new Table();
     for (Slot slot : player.getSlots()) {
       SlotUI slotUI = new SlotUI(slot, skin);
-      slotsRow.add(slotUI).size(40, 30).pad(40);
+      slotsRow.add(slotUI).size(40, 30).pad(80);
     }
 
     // Лейбл игрока
@@ -97,10 +98,10 @@ public class BoardUI extends Table {
     for (Slot slot : player.getSlots()) {
       if (slot.getUnit() != null) {
         UnitUI unitUI = new UnitUI(slot.getUnit(), skin);
-        slotsRow.add(unitUI).size(80, 120).pad(10);
+        slotsRow.add(unitUI).size(80, 120).pad(40);
       } else {
         SlotUI slotUI = new SlotUI(slot, skin);
-        slotsRow.add(slotUI).size(40, 30).pad(40);
+        slotsRow.add(slotUI).size(40, 30).pad(80);
       }
     }
 
@@ -110,12 +111,10 @@ public class BoardUI extends Table {
             " Mana: " + player.getMana() + "/" + player.getMaxMana());
   }
 
-  // Получить EnemyUI
   public EnemyUI getEnemyUI() {
     return enemyUI;
   }
 
-  // Получить список живых UnitUI
   public ArrayList<UnitUI> getPlayerUnitUIs() {
     ArrayList<UnitUI> result = new ArrayList<>();
     for (Actor child : slotsRow.getChildren()) {
@@ -126,5 +125,20 @@ public class BoardUI extends Table {
       }
     }
     return result;
+  }
+
+  public UnitUI findUnitUI(io.github.some_example_name.model.Unit unit) {
+    for (Actor actor : slotsRow.getChildren()) {
+      if (actor instanceof UnitUI) {
+        UnitUI uui = (UnitUI) actor;
+        if (uui.getUnit() == unit)
+          return uui;
+      }
+    }
+    return null;
+  }
+
+  public Actor getPlayerActor() {
+    return this.playerLabel;
   }
 }

@@ -35,7 +35,6 @@ public class BattleTest {
 
       // --- Ход юнитов игрока ---
       System.out.println("\nХод юнитов игрока:");
-      engine.processPlayerUnitsTurn();
 
       // Вывод состояния после хода игрока
       engine.printState();

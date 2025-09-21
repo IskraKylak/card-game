@@ -2,6 +2,7 @@
 .gradle/
 gradle-app.setting
 /build/
+/assets/game/atlases
 /android/build/
 /core/build/
 /lwjgl2/build/

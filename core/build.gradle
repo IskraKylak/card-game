@@ -14,6 +14,7 @@ repositories {
 
 dependencies {
     api "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-tools:1.13.1"
 
     if(enableGraalNative == 'true') {
         implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"

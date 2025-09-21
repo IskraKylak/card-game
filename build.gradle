@@ -7,8 +7,7 @@ buildscript {
     maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
   }
   dependencies {
-
-
+    classpath "com.badlogicgames.gdx:gdx-tools:$gdxVersion"
   }
 }
 
@@ -70,3 +69,22 @@ subprojects {
 }
 
 eclipse.project.name = 'TestGame' + '-parent'
+
+import com.badlogic.gdx.tools.texturepacker.TexturePacker
+
+task packTextures {
+    doLast {
+        def settings = new TexturePacker.Settings()
+        settings.maxWidth = 2048
+        settings.maxHeight = 2048
+        settings.duplicatePadding = true
+        settings.edgePadding = true
+        settings.rotation = false
+
+        TexturePacker.process(settings,
+            "assets/game/board",     // входная папка с твоими 60 картинками
+            "assets/game/atlases",   // куда сохранять атлас
+            "board"                  // имя атласа (будет board.png и board.atlas)
+        )
+    }
+}

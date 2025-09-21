@@ -119,39 +119,12 @@ public class GameEngine {
       } else {
         System.out.println("\nИгрок не может сыграть карту: " + card.getName() +
             " (Мана=" + player.getMana() + ")");
-        player.discardCard(card);
+        player.playCard(card);
       }
     }
 
     System.out.println("Конец хода игрока: Мана=" + player.getMana() + ", Карты в руке=" + player.getHand().size() +
         ", Карты в отбое=" + player.getDiscard().size());
-  }
-
-  // --- Ход юнитов игрока ---
-  public void processPlayerUnitsTurn() {
-    Player player = context.getPlayer();
-    Enemy enemy = context.getEnemy();
-
-    for (Slot slot : player.getSlots()) {
-      Unit unit = slot.getUnit();
-      if (unit == null || !unit.isAlive())
-        continue;
-
-      // Атака врага
-      enemy.takeDamage(unit.getAttack());
-      System.out.println(unit.getName() + " атакует врага на " + unit.getAttack() +
-          " урона. Враг HP: " + enemy.getHealth());
-
-      // Контратака врага
-      if (enemy.isAlive()) {
-        unit.takeDamage(enemy.getAttackPower());
-        System.out.println("Враг контратакует " + unit.getName() + " на " +
-            enemy.getAttackPower() + " урона. " + unit.getName() +
-            " HP: " + unit.getHealth());
-      }
-    }
-
-    removeDeadUnits();
   }
 
   // Файл: GameEngine.java
@@ -161,24 +134,26 @@ public class GameEngine {
 
     // Юнит наносит урон врагу
     enemy.takeDamage(unit.getAttack());
-
-    // Враг контратакует
-    if (enemy.isAlive()) {
-      unit.takeDamage(enemy.getAttackPower());
-    }
   }
 
-  // --- Ход врага ---
-  public void processEnemyTurn() {
-    Player player = context.getPlayer();
-    Enemy enemy = context.getEnemy();
-
-    if (!enemy.isAlive())
+  public void counterAttack(Unit unit, Enemy enemy) {
+    if (!unit.isAlive() || !enemy.isAlive())
       return;
 
-    String action = enemy.takeTurn();
-    System.out.println("Враг делает " + action);
+    // Враг контратакует юнита
+    unit.takeDamage(enemy.getAttackPower());
+  }
 
+  // Выносим логику "что сделает враг" — НЕ применяет изменения, только решает
+  public EnemyAction planEnemyAction() {
+    Enemy enemy = context.getEnemy();
+    Player player = context.getPlayer();
+
+    if (!enemy.isAlive()) {
+      return EnemyAction.none();
+    }
+
+    String action = enemy.takeTurn(); // оставляем выбор внутри Enemy (как у тебя было)
     switch (action) {
       case "ATTACK":
         List<Slot> playerSlots = player.getSlots();
@@ -188,29 +163,60 @@ public class GameEngine {
             aliveUnits.add(slot.getUnit());
           }
         }
-
         if (!aliveUnits.isEmpty()) {
           Unit target = aliveUnits.get(random.nextInt(aliveUnits.size()));
-          target.takeDamage(enemy.getAttackPower());
-          System.out.println("Враг атакует " + target.getName() + " на " +
-              enemy.getAttackPower() + " урона.");
-          if (target.isAlive()) {
-            target.takeDamage(enemy.getAttackPower()); // контратака
-          }
+          return new EnemyAction(EnemyAction.Type.ATTACK, target, enemy.getAttackPower());
         } else {
-          player.takeDamage(enemy.getAttackPower());
-          System.out.println("Враг атакует игрока на " + enemy.getAttackPower() + " урона.");
+          // цель — сам игрок (targetUnit == null)
+          return new EnemyAction(EnemyAction.Type.ATTACK, null, enemy.getAttackPower());
+        }
+
+      case "BUFF":
+        int heal = 3; // как у тебя
+        return new EnemyAction(EnemyAction.Type.BUFF, null, heal);
+
+      default:
+        return EnemyAction.none();
+    }
+  }
+
+  // Применяет заранее спланированное действие к моделям
+  public void executeEnemyAction(EnemyAction action) {
+    Enemy enemy = context.getEnemy();
+    Player player = context.getPlayer();
+
+    switch (action.getType()) {
+      case ATTACK:
+        if (action.getTargetUnit() != null) {
+          Unit target = action.getTargetUnit();
+          target.takeDamage(action.getAmount());
+          System.out.println("Враг атакует " + target.getName() + " на " + action.getAmount() + " урона.");
+          // если у тебя была логика контратаки — выполните её, но лучше вынести в
+          // отдельный момент
+        } else {
+          player.takeDamage(action.getAmount());
+          System.out.println("Враг атакует игрока на " + action.getAmount() + " урона.");
         }
         break;
 
-      case "BUFF":
-        int heal = 3;
-        enemy.heal(heal);
-        System.out.println("Враг делает BUFF и восстанавливает " + heal + " HP. Враг HP: " + enemy.getHealth());
+      case BUFF:
+        enemy.heal(action.getAmount());
+        System.out.println("Враг делает BUFF и восстанавливает " + action.getAmount() + " HP.");
+        break;
+
+      case NONE:
+      default:
+        // ничего
         break;
     }
 
     removeDeadUnits();
+  }
+
+  // --- Ход врага ---
+  public void processEnemyTurn() {
+    EnemyAction action = planEnemyAction();
+    executeEnemyAction(action);
   }
 
   // --- Работа с картами ---
@@ -235,9 +241,16 @@ public class GameEngine {
         break;
 
       // Берём карту из колоды
+
+      System.out.println("Рука игрока: " + player.getHand().size() +
+          ", Колода: " + player.getBattleDeck().size() +
+          ", Отбой: " + player.getDiscard().size() +
+          ", Макс. рука: " + player.getMaxHand());
       player.getHand().add(player.getBattleDeck().remove(0));
       cardsNeeded--;
     }
+
+    player.restoreMana(player.getMaxMana());
   }
 
   // --- Проверка конца боя ---

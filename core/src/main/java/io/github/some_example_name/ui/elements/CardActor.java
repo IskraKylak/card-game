@@ -52,14 +52,35 @@ public class CardActor extends Table {
       @Override
       public void drag(InputEvent event, float x, float y, int pointer) {
         setPosition(getX() + x - grabOffsetX, getY() + y - grabOffsetY);
+
+        // проверяем, есть ли цель под картой
+        Vector2 stageCoords = localToStageCoordinates(new Vector2(getWidth() / 2, getHeight() / 2));
+        Object target = battleScreenUI.getBoardUI().findTargetAt(stageCoords.x, stageCoords.y);
+
+        if (target != null) {
+          setHighlighted(true); // подсвечиваем карту
+        } else {
+          setHighlighted(false); // убираем подсветку
+        }
       }
 
       @Override
       public void dragStop(InputEvent event, float x, float y, int pointer) {
         Vector2 stageCoords = localToStageCoordinates(new Vector2(getWidth() / 2, getHeight() / 2));
         battleScreenUI.onCardDropped(CardActor.this, stageCoords.x, stageCoords.y);
+        setHighlighted(false);
       }
     });
+  }
+
+  public void setHighlighted(boolean highlighted) {
+    if (highlighted) {
+      this.setColor(0, 1, 0, 1); // зелёный оттенок
+      this.setDebug(true); // включаем рамку, если используешь debug
+    } else {
+      this.setColor(1, 1, 1, 1); // возвращаем стандартный вид
+      this.setDebug(false);
+    }
   }
 
   public Card getCard() {

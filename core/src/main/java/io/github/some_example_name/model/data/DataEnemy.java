@@ -9,7 +9,7 @@ public class DataEnemy {
 
   // Шаблоны врагов
   private static final Enemy GOBLIN_TEMPLATE = new Enemy("Goblin", 10, 2, "game/enemies/goblin");
-  private static final Enemy ORC_TEMPLATE = new Enemy("Orc", 20, 4, "game/enemies/orc");
+  private static final Enemy ORC_TEMPLATE = new Enemy("Orc", 40, 3, "game/enemies/orc");
   private static final Enemy MAGE_TEMPLATE = new Enemy("Mage", 12, 3, "game/enemies/mage");
 
   // Создать список всех врагов (новые экземпляры для боя)

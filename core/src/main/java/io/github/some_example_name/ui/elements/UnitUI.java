@@ -18,6 +18,7 @@ public class UnitUI extends Table {
   private Animation<TextureRegion> idleAnimation;
   private Animation<TextureRegion> attackAnimation;
   private Animation<TextureRegion> currentAnimation;
+  private Animation<TextureRegion> deadAnimation;
   private float stateTime = 0f;
 
   private Image unitImage;
@@ -33,12 +34,13 @@ public class UnitUI extends Table {
 
     idleAnimation = loadAnimation(spriteFolder, "idle", 0.2f, Animation.PlayMode.LOOP);
     attackAnimation = loadAnimation(spriteFolder, "attack", 0.1f, Animation.PlayMode.NORMAL);
+    deadAnimation = loadAnimation(spriteFolder, "dead", 0.1f, Animation.PlayMode.NORMAL);
     currentAnimation = idleAnimation;
 
     // Берем первый кадр для Image
     TextureRegion firstFrame = idleAnimation.getKeyFrame(0);
     unitImage = new Image(firstFrame);
-    unitImage.setSize(80, 120);
+    unitImage.setSize(150, 120);
 
     // Лейблы
     nameLabel = new Label(unit.getName(), skin);
@@ -46,7 +48,7 @@ public class UnitUI extends Table {
     hpLabel = new Label("HP: " + unit.getHealth(), skin);
 
     // Добавляем в Table: спрайт сверху, лейблы снизу
-    this.add(unitImage).size(80, 120).row();
+    this.add(unitImage).size(150, 120).row();
     this.add(nameLabel).padTop(2).row();
     this.add(attackLabel).padTop(2).row();
     this.add(hpLabel).padTop(2).row();
@@ -84,6 +86,11 @@ public class UnitUI extends Table {
 
   public void playAttack() {
     currentAnimation = attackAnimation;
+    stateTime = 0f;
+  }
+
+  public void playDead() {
+    currentAnimation = deadAnimation;
     stateTime = 0f;
   }
 

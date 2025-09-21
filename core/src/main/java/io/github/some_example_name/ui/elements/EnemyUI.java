@@ -31,14 +31,14 @@ public class EnemyUI extends Table {
 
     String spriteFolder = enemy.getSpriteFolder();
 
-    idleAnimation = loadAnimation(spriteFolder, "idle", 0.2f, Animation.PlayMode.LOOP);
-    attackAnimation = loadAnimation(spriteFolder, "attack", 0.1f, Animation.PlayMode.NORMAL);
+    idleAnimation = loadAnimation(spriteFolder, "idle", 0.1f, Animation.PlayMode.LOOP);
+    attackAnimation = loadAnimation(spriteFolder, "attack", 0.05f, Animation.PlayMode.NORMAL);
     currentAnimation = idleAnimation;
 
     // Берем первый кадр для Image
     TextureRegion firstFrame = idleAnimation.getKeyFrame(0);
     unitImage = new Image(firstFrame);
-    unitImage.setSize(80, 120);
+    unitImage.setSize(240, 260);
 
     // Лейблы
     nameLabel = new Label(enemy.getName(), skin);
@@ -46,7 +46,7 @@ public class EnemyUI extends Table {
     hpLabel = new Label("HP: " + enemy.getHealth(), skin);
 
     // Добавляем в Table: спрайт сверху, лейблы снизу
-    this.add(unitImage).size(100, 120).row();
+    this.add(unitImage).size(240, 260).row();
     this.add(nameLabel).padTop(2).row();
     this.add(attackLabel).padTop(2).row();
     this.add(hpLabel).padTop(2).row();
@@ -93,5 +93,21 @@ public class EnemyUI extends Table {
 
   public Enemy getEnemy() {
     return enemy;
+  }
+
+  /**
+   * Обновляет отображение врага по данным из модели.
+   */
+  public void refresh() {
+    nameLabel.setText(enemy.getName());
+    attackLabel.setText("ATK: " + enemy.getAttackPower());
+    hpLabel.setText("HP: " + enemy.getHealth());
+
+    // Если враг мертв — скрываем его
+    if (!enemy.isAlive()) {
+      this.setVisible(false);
+    } else {
+      this.setVisible(true);
+    }
   }
 }
