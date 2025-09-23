@@ -10,6 +10,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener;
 import io.github.some_example_name.model.Card;
+import io.github.some_example_name.model.CardType;
+import io.github.some_example_name.model.Enemy;
+import io.github.some_example_name.model.Slot;
 import io.github.some_example_name.ui.BattleScreenUI;
 
 public class CardActor extends Table {
@@ -53,21 +56,41 @@ public class CardActor extends Table {
       public void drag(InputEvent event, float x, float y, int pointer) {
         setPosition(getX() + x - grabOffsetX, getY() + y - grabOffsetY);
 
-        // проверяем, есть ли цель под картой
+        // Проверяем цель под картой
         Vector2 stageCoords = localToStageCoordinates(new Vector2(getWidth() / 2, getHeight() / 2));
         Object target = battleScreenUI.getBoardUI().findTargetAt(stageCoords.x, stageCoords.y);
 
-        if (target != null) {
-          setHighlighted(true); // подсвечиваем карту
-        } else {
-          setHighlighted(false); // убираем подсветку
+        boolean shouldHighlight = false;
+
+        if (card.getType() == CardType.UNIT && target instanceof Slot) {
+          // юнит можно ставить только в слот
+          Slot slot = (Slot) target;
+          if (!slot.isOccupied()) {
+            shouldHighlight = true;
+          }
         }
+
+        if ((card.getType() == CardType.ATTACK || card.getType() == CardType.DEBUFF) && target instanceof Enemy) {
+          // атака работает только по врагу
+          shouldHighlight = true;
+        }
+
+        if (card.getType() == CardType.BUFF && target instanceof io.github.some_example_name.model.Unit) {
+          // Баф можно накладывать только на юнита
+          io.github.some_example_name.model.Unit unit = (io.github.some_example_name.model.Unit) target;
+          if (unit.isAlive()) {
+            shouldHighlight = true;
+          }
+        }
+
+        setHighlighted(shouldHighlight);
       }
 
       @Override
       public void dragStop(InputEvent event, float x, float y, int pointer) {
         Vector2 stageCoords = localToStageCoordinates(new Vector2(getWidth() / 2, getHeight() / 2));
         battleScreenUI.onCardDropped(CardActor.this, stageCoords.x, stageCoords.y);
+
         setHighlighted(false);
       }
     });

@@ -20,7 +20,7 @@ public class GameEngine {
 
   // --- Инициализация боя ---
   private void startBattle() {
-    context.getPlayer().initBattleDeck();
+    context.getPlayer().initBattle();
     context.getPlayer().restoreMana(context.getPlayer().getMaxMana());
 
     // Очищаем слоты на доске
@@ -47,85 +47,94 @@ public class GameEngine {
   }
 
   // --- Разыграть карту игрока на цель ---
-  public boolean playCardOnTarget(Card card, Object target) {
+  // --- Разыграть карту игрока на цель ---
+  public boolean playCardOnTarget(Card card, Targetable target) {
     Player player = context.getPlayer();
 
-    // Проверяем ману
+    // Проверка маны
     if (player.getMana() < card.getCost()) {
       System.out.println("Недостаточно маны для розыгрыша карты: " + card.getName());
       return false;
     }
 
-    // --- Цель: слот ---
-    if (target instanceof Slot) {
-      Slot slot = (Slot) target;
+    // Проверяем, можно ли карту применить на эту цель
+    boolean validTarget;
+    switch (card.getType()) {
+    case UNIT:
+      validTarget = target instanceof Slot;
+      break;
+    case ATTACK:
+      validTarget = target instanceof Enemy || target instanceof Player;
+      break;
+    case BUFF:
+      validTarget = target instanceof Unit;
+      break;
+    case DEBUFF:
+      validTarget = target instanceof Enemy;
+      break;
+    default:
+      validTarget = false;
+    }
 
-      // Если карта — юнит
-      if (card.getType() == CardType.UNIT) {
-        if (!slot.isOccupied()) {
-          System.out.println("Игрок разыгрывает карту-юнита: " + card.getName() + " в слот " + slot.getId());
-
-          // Запускаем эффект карты
-          card.play(context, slot);
-
-          // Списываем ману
-          player.setMana(player.getMana() - card.getCost());
-
-          // Отправляем карту в отбой
-          player.playCard(card);
-
-          return true;
-        } else {
-          System.out.println("Слот " + slot.getId() + " занят, нельзя разыграть юнита.");
-          return false;
-        }
-      }
-
-      // Если карта НЕ юнит → пока ничего не делаем
-      System.out.println("Карта " + card.getName() + " не может быть разыграна на слот.");
+    if (!validTarget) {
+      System.out.println("Карта " + card.getName() + " не может быть применена на эту цель.");
       return false;
     }
 
-    // --- Цель неизвестна ---
-    System.out.println("Неверная цель для карты: " + card.getName());
-    return false;
+    // Применяем эффект карты
+    boolean applied = card.getEffect().apply(context, target);
+
+    if (applied) {
+      player.setMana(player.getMana() - card.getCost());
+      player.playCard(card);
+      System.out.println("Карта " + card.getName() + " успешно разыграна.");
+    } else {
+      System.out.println("Не удалось применить карту " + card.getName() + " на цель.");
+    }
+
+    return applied;
   }
 
   // --- Игрок разыгрывает карты ---
-  public void playPlayerHand() {
-    Player player = context.getPlayer();
-    drawCards(4);
-    player.restoreMana(player.getMaxMana());
+  // public void playPlayerHand() {
+  // Player player = context.getPlayer();
+  // drawCards(4);
+  // player.restoreMana(player.getMaxMana());
 
-    System.out.println("Начало хода игрока: Мана=" + player.getMana() + ", Карты в руке=" + player.getHand().size() +
-        ", Карты в отбое=" + player.getDiscard().size() + ", Карты в колоде=" + player.getBattleDeck().size());
+  // System.out.println("Начало хода игрока: Мана=" + player.getMana() + ", Карты
+  // в руке=" + player.getHand().size()
+  // + ", Карты в отбое=" + player.getDiscard().size() + ", Карты в колоде=" +
+  // player.getBattleDeck().size());
 
-    for (Card card : new ArrayList<>(player.getHand())) {
-      if (player.getMana() >= card.getCost()) {
-        System.out.println("\nИгрок играет карту: " + card.getName());
+  // for (Card card : new ArrayList<>(player.getHand())) {
+  // if (player.getMana() >= card.getCost()) {
+  // System.out.println("\nИгрок играет карту: " + card.getName());
 
-        // --- эффект карты ---
-        Slot targetSlot = player.getFirstFreeSlot(); // для SummonUnitEffect
-        card.play(context, targetSlot);
+  // // --- эффект карты ---
+  // Slot targetSlot = player.getFirstFreeSlot(); // для SummonUnitEffect
+  // card.play(context, targetSlot);
 
-        // Списываем ману и отправляем карту в отбой
-        player.setMana(player.getMana() - card.getCost());
-        player.playCard(card);
+  // // Списываем ману и отправляем карту в отбой
+  // player.setMana(player.getMana() - card.getCost());
+  // player.playCard(card);
 
-        removeDeadUnits();
+  // removeDeadUnits();
 
-        System.out.println("После розыгрыша: Мана=" + player.getMana() + ", Карты в руке=" + player.getHand().size() +
-            ", Карты в отбое=" + player.getDiscard().size() + ", Карты в колоде=" + player.getBattleDeck().size());
-      } else {
-        System.out.println("\nИгрок не может сыграть карту: " + card.getName() +
-            " (Мана=" + player.getMana() + ")");
-        player.playCard(card);
-      }
-    }
+  // System.out.println("После розыгрыша: Мана=" + player.getMana() + ", Карты в
+  // руке=" + player.getHand().size()
+  // + ", Карты в отбое=" + player.getDiscard().size() + ", Карты в колоде=" +
+  // player.getBattleDeck().size());
+  // } else {
+  // System.out.println("\nИгрок не может сыграть карту: " + card.getName() + "
+  // (Мана=" + player.getMana() + ")");
+  // player.playCard(card);
+  // }
+  // }
 
-    System.out.println("Конец хода игрока: Мана=" + player.getMana() + ", Карты в руке=" + player.getHand().size() +
-        ", Карты в отбое=" + player.getDiscard().size());
-  }
+  // System.out.println("Конец хода игрока: Мана=" + player.getMana() + ", Карты в
+  // руке=" + player.getHand().size()
+  // + ", Карты в отбое=" + player.getDiscard().size());
+  // }
 
   // Файл: GameEngine.java
   public void unitAttack(Unit unit, Enemy enemy) {
@@ -133,7 +142,7 @@ public class GameEngine {
       return;
 
     // Юнит наносит урон врагу
-    enemy.takeDamage(unit.getAttack());
+    enemy.takeDamage(unit.getAttackPower());
   }
 
   public void counterAttack(Unit unit, Enemy enemy) {
@@ -155,28 +164,28 @@ public class GameEngine {
 
     String action = enemy.takeTurn(); // оставляем выбор внутри Enemy (как у тебя было)
     switch (action) {
-      case "ATTACK":
-        List<Slot> playerSlots = player.getSlots();
-        List<Unit> aliveUnits = new ArrayList<>();
-        for (Slot slot : playerSlots) {
-          if (slot.getUnit() != null && slot.getUnit().isAlive()) {
-            aliveUnits.add(slot.getUnit());
-          }
+    case "ATTACK":
+      List<Slot> playerSlots = player.getSlots();
+      List<Unit> aliveUnits = new ArrayList<>();
+      for (Slot slot : playerSlots) {
+        if (slot.getUnit() != null && slot.getUnit().isAlive()) {
+          aliveUnits.add(slot.getUnit());
         }
-        if (!aliveUnits.isEmpty()) {
-          Unit target = aliveUnits.get(random.nextInt(aliveUnits.size()));
-          return new EnemyAction(EnemyAction.Type.ATTACK, target, enemy.getAttackPower());
-        } else {
-          // цель — сам игрок (targetUnit == null)
-          return new EnemyAction(EnemyAction.Type.ATTACK, null, enemy.getAttackPower());
-        }
+      }
+      if (!aliveUnits.isEmpty()) {
+        Unit target = aliveUnits.get(random.nextInt(aliveUnits.size()));
+        return new EnemyAction(EnemyAction.Type.ATTACK, target, enemy.getAttackPower());
+      } else {
+        // цель — сам игрок (targetUnit == null)
+        return new EnemyAction(EnemyAction.Type.ATTACK, null, enemy.getAttackPower());
+      }
 
-      case "BUFF":
-        int heal = 3; // как у тебя
-        return new EnemyAction(EnemyAction.Type.BUFF, null, heal);
+    case "BUFF":
+      int heal = 3; // как у тебя
+      return new EnemyAction(EnemyAction.Type.BUFF, null, heal);
 
-      default:
-        return EnemyAction.none();
+    default:
+      return EnemyAction.none();
     }
   }
 
@@ -186,28 +195,28 @@ public class GameEngine {
     Player player = context.getPlayer();
 
     switch (action.getType()) {
-      case ATTACK:
-        if (action.getTargetUnit() != null) {
-          Unit target = action.getTargetUnit();
-          target.takeDamage(action.getAmount());
-          System.out.println("Враг атакует " + target.getName() + " на " + action.getAmount() + " урона.");
-          // если у тебя была логика контратаки — выполните её, но лучше вынести в
-          // отдельный момент
-        } else {
-          player.takeDamage(action.getAmount());
-          System.out.println("Враг атакует игрока на " + action.getAmount() + " урона.");
-        }
-        break;
+    case ATTACK:
+      if (action.getTargetUnit() != null) {
+        Unit target = action.getTargetUnit();
+        target.takeDamage(action.getAmount());
+        System.out.println("Враг атакует " + target.getName() + " на " + action.getAmount() + " урона.");
+        // если у тебя была логика контратаки — выполните её, но лучше вынести в
+        // отдельный момент
+      } else {
+        player.takeDamage(action.getAmount());
+        System.out.println("Враг атакует игрока на " + action.getAmount() + " урона.");
+      }
+      break;
 
-      case BUFF:
-        enemy.heal(action.getAmount());
-        System.out.println("Враг делает BUFF и восстанавливает " + action.getAmount() + " HP.");
-        break;
+    case BUFF:
+      enemy.heal(action.getAmount());
+      System.out.println("Враг делает BUFF и восстанавливает " + action.getAmount() + " HP.");
+      break;
 
-      case NONE:
-      default:
-        // ничего
-        break;
+    case NONE:
+    default:
+      // ничего
+      break;
     }
 
     removeDeadUnits();
@@ -230,10 +239,12 @@ public class GameEngine {
         player.getBattleDeck().addAll(player.getDiscard());
         player.getDiscard().clear();
         // Collections.shuffle(player.getBattleDeck());
-        System.out.println("Колода пуста. Отбой перемещён в колоду и перемешан.");
-        System.out.println("Теперь в колоде: " + player.getBattleDeck().size() + " карт");
-        System.out.println("Теперь в отбое: " + player.getDiscard().size() + " карт");
-        System.out.println("Карты в руке игрока: " + player.getHand().size());
+        // System.out.println("Колода пуста. Отбой перемещён в колоду и перемешан.");
+        // System.out.println("Теперь в колоде: " + player.getBattleDeck().size() + "
+        // карт");
+        // System.out.println("Теперь в отбое: " + player.getDiscard().size() + "
+        // карт");
+        // System.out.println("Карты в руке игрока: " + player.getHand().size());
       }
 
       // Если колода пуста и отбой пуст — прекращаем
@@ -242,10 +253,10 @@ public class GameEngine {
 
       // Берём карту из колоды
 
-      System.out.println("Рука игрока: " + player.getHand().size() +
-          ", Колода: " + player.getBattleDeck().size() +
-          ", Отбой: " + player.getDiscard().size() +
-          ", Макс. рука: " + player.getMaxHand());
+      // System.out.println("Рука игрока: " + player.getHand().size() +
+      // ", Колода: " + player.getBattleDeck().size() +
+      // ", Отбой: " + player.getDiscard().size() +
+      // ", Макс. рука: " + player.getMaxHand());
       player.getHand().add(player.getBattleDeck().remove(0));
       cardsNeeded--;
     }
@@ -273,17 +284,18 @@ public class GameEngine {
   // --- Вывод состояния ---
   public void printState() {
     Player player = context.getPlayer();
-    Enemy enemy = context.getEnemy();
+    // Enemy enemy = context.getEnemy();
 
-    System.out.println("\nСостояние после хода:");
-    System.out.println("Враг HP: " + enemy.getHealth());
-    System.out.println("Игрок HP: " + player.getHealth());
+    // System.out.println("\nСостояние после хода:");
+    // System.out.println("Враг HP: " + enemy.getHealth());
+    // System.out.println("Игрок HP: " + player.getHealth());
 
     for (Slot slot : player.getSlots()) {
       Unit u = slot.getUnit();
       if (u != null) {
-        System.out.println("- Слот " + slot.getId() + ": " + u.getName() + " HP: " + u.getHealth() +
-            (u.isAlive() ? "" : " (мертв)"));
+        // System.out.println("- Слот " + slot.getId() + ": " + u.getName() + " HP: " +
+        // u.getHealth() +
+        // (u.isAlive() ? "" : " (мертв)"));
       }
     }
   }

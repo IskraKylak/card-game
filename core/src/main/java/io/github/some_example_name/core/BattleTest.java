@@ -9,7 +9,7 @@ public class BattleTest {
     Player player = DataPlayers.createLifePlayer();
     player.buildDefaultDeckFromFaction();
     player.buildBattleDeck();
-    player.initBattleDeck();
+    player.initBattle();
 
     // Создаём врага
     Enemy enemy = DataEnemy.createMage();
@@ -31,7 +31,7 @@ public class BattleTest {
 
       // --- Ход игрока ---
       System.out.println("\nХод игрока:");
-      engine.playPlayerHand();
+      // engine.playPlayerHand();
 
       // --- Ход юнитов игрока ---
       System.out.println("\nХод юнитов игрока:");

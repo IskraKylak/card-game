@@ -21,7 +21,7 @@ public class CardGame extends Game {
     Player player = DataPlayers.createLifePlayer();
     player.buildDefaultDeckFromFaction();
     player.buildBattleDeck();
-    player.initBattleDeck();
+    player.initBattle();
 
     // Создаём врага
     Enemy enemy = DataEnemy.createOrc();

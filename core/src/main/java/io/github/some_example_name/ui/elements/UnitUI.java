@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 import io.github.some_example_name.model.Unit;
+import io.github.some_example_name.ui.effects.BuffEffectUI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,10 @@ public class UnitUI extends Table {
   private Label attackLabel;
   private Label hpLabel;
 
+  // 🔹 иконки баффов/дебаффов
+  private static final Texture BUFF_ICON = new Texture(Gdx.files.internal("game/icons/buff.png"));
+  private static final Texture DEBUFF_ICON = new Texture(Gdx.files.internal("game/icons/debuff.png"));
+
   public UnitUI(Unit unit, Skin skin) {
     this.unit = unit;
     this.skin = skin;
@@ -37,21 +42,24 @@ public class UnitUI extends Table {
     deadAnimation = loadAnimation(spriteFolder, "dead", 0.1f, Animation.PlayMode.NORMAL);
     currentAnimation = idleAnimation;
 
-    // Берем первый кадр для Image
     TextureRegion firstFrame = idleAnimation.getKeyFrame(0);
     unitImage = new Image(firstFrame);
     unitImage.setSize(150, 120);
 
-    // Лейблы
     nameLabel = new Label(unit.getName(), skin);
-    attackLabel = new Label("ATK: " + unit.getAttack(), skin);
+    attackLabel = new Label("ATK: " + unit.getAttackPower(), skin);
     hpLabel = new Label("HP: " + unit.getHealth(), skin);
 
-    // Добавляем в Table: спрайт сверху, лейблы снизу
     this.add(unitImage).size(150, 120).row();
     this.add(nameLabel).padTop(2).row();
     this.add(attackLabel).padTop(2).row();
     this.add(hpLabel).padTop(2).row();
+  }
+
+  public void playBuffAnimation() {
+    BuffEffectUI effect = new BuffEffectUI(getWidth(), getHeight());
+    addActor(effect);
+    effect.toFront();
   }
 
   private Animation<TextureRegion> loadAnimation(String folder, String prefix, float frameDuration,
@@ -79,6 +87,33 @@ public class UnitUI extends Table {
     }
   }
 
+  @Override
+  public void draw(Batch batch, float parentAlpha) {
+    super.draw(batch, parentAlpha);
+
+    // 🔹 Проверяем есть ли эффекты
+    if (!unit.getStatusEffects().isEmpty()) {
+      boolean hasBuff = unit.getStatusEffects().stream().anyMatch(e -> !e.isNegative());
+      boolean hasDebuff = unit.getStatusEffects().stream().anyMatch(e -> e.isNegative());
+
+      float iconSize = 24f;
+      float padding = 4f;
+
+      float startX = getX() + getWidth() - iconSize - padding;
+      float iconY = getY() + getHeight() - iconSize - padding;
+
+      if (hasBuff && hasDebuff) {
+        // обе иконки рядом
+        batch.draw(DEBUFF_ICON, startX - iconSize - 2, iconY, iconSize, iconSize);
+        batch.draw(BUFF_ICON, startX, iconY, iconSize, iconSize);
+      } else if (hasDebuff) {
+        batch.draw(DEBUFF_ICON, startX, iconY, iconSize, iconSize);
+      } else if (hasBuff) {
+        batch.draw(BUFF_ICON, startX, iconY, iconSize, iconSize);
+      }
+    }
+  }
+
   public void playIdle() {
     currentAnimation = idleAnimation;
     stateTime = 0f;
@@ -96,5 +131,19 @@ public class UnitUI extends Table {
 
   public Unit getUnit() {
     return unit;
+  }
+
+  public void refresh() {
+    nameLabel.setText(unit.getName());
+    attackLabel.setText("ATK: " + unit.getAttackPower());
+    hpLabel.setText("HP: " + unit.getHealth());
+
+    if (!unit.isAlive()) {
+      playDead();
+    } else {
+      if (currentAnimation != attackAnimation) {
+        playIdle();
+      }
+    }
   }
 }

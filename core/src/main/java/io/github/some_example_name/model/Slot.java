@@ -1,6 +1,6 @@
 package io.github.some_example_name.model;
 
-public class Slot {
+public class Slot implements Targetable {
   private final int id; // уникальный идентификатор слота
   private Unit unit; // null если пустой
 

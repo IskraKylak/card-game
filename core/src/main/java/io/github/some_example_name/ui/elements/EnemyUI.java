@@ -25,6 +25,9 @@ public class EnemyUI extends Table {
   private Label attackLabel;
   private Label hpLabel;
 
+  private static final Texture BUFF_ICON = new Texture(Gdx.files.internal("game/icons/buff.png"));
+  private static final Texture DEBUFF_ICON = new Texture(Gdx.files.internal("game/icons/debuff.png"));
+
   public EnemyUI(Enemy enemy, Skin skin) {
     this.enemy = enemy;
     this.skin = skin;
@@ -54,6 +57,32 @@ public class EnemyUI extends Table {
 
   public void refreshHP() {
     hpLabel.setText("HP: " + enemy.getHealth());
+  }
+
+  @Override
+  public void draw(Batch batch, float parentAlpha) {
+    super.draw(batch, parentAlpha);
+
+    // 🔹 Отображение эффектов
+    if (!enemy.getStatusEffects().isEmpty()) {
+      boolean hasBuff = enemy.getStatusEffects().stream().anyMatch(e -> !e.isNegative());
+      boolean hasDebuff = enemy.getStatusEffects().stream().anyMatch(e -> e.isNegative());
+
+      float iconSize = 24f;
+      float padding = 4f;
+
+      float startX = getX() + getWidth() - iconSize - padding - 20f;
+      float iconY = getY() + getHeight() - iconSize - padding - 50f;
+
+      if (hasBuff && hasDebuff) {
+        batch.draw(DEBUFF_ICON, startX - iconSize - 2, iconY, iconSize, iconSize);
+        batch.draw(BUFF_ICON, startX, iconY, iconSize, iconSize);
+      } else if (hasDebuff) {
+        batch.draw(DEBUFF_ICON, startX, iconY, iconSize, iconSize);
+      } else if (hasBuff) {
+        batch.draw(BUFF_ICON, startX, iconY, iconSize, iconSize);
+      }
+    }
   }
 
   private Animation<TextureRegion> loadAnimation(String folder, String prefix, float frameDuration,

@@ -23,6 +23,10 @@ import io.github.some_example_name.core.EnemyAction;
 import io.github.some_example_name.core.GameContext;
 import io.github.some_example_name.core.GameEngine;
 import io.github.some_example_name.model.Card;
+import io.github.some_example_name.model.CardType;
+import io.github.some_example_name.model.Targetable;
+import io.github.some_example_name.model.status.StatusEffect;
+import io.github.some_example_name.ui.effects.BuffEffectUI;
 import io.github.some_example_name.ui.elements.CardActor;
 import io.github.some_example_name.ui.elements.EnemyUI;
 import io.github.some_example_name.ui.elements.UnitUI;
@@ -77,11 +81,36 @@ public class BattleScreenUI extends ScreenAdapter {
     });
   }
 
+  private void processStatusEffects() {
+    // Эффекты игрока
+    for (UnitUI unitUI : boardUI.getPlayerUnitUIs()) {
+      for (StatusEffect effect : new ArrayList<>(unitUI.getUnit().getStatusEffects())) {
+        effect.onTurnStart(unitUI.getUnit());
+        if (!effect.tick(unitUI.getUnit())) {
+          unitUI.getUnit().removeStatusEffect(effect);
+        }
+      }
+    }
+
+    // Эффекты врага
+    EnemyUI enemyUI = boardUI.getEnemyUI();
+    for (StatusEffect effect : new ArrayList<>(context.getEnemy().getStatusEffects())) {
+      effect.onTurnStart(context.getEnemy());
+      if (!effect.tick(context.getEnemy())) {
+        context.getEnemy().removeStatusEffect(effect);
+      }
+    }
+
+    // Обновляем UI
+    boardUI.refresh();
+  }
+
   private void handleEndTurn() {
     statusPanelUI.getEndTurnButton().setDisabled(true);
 
     // 1️⃣ Ход игрока
     animatePlayerUnitsTurn(() -> {
+      processStatusEffects();
       // 2️⃣ Ход врага
       animateEnemyTurn(() -> {
         if (engine.isBattleOver()) {
@@ -239,20 +268,16 @@ public class BattleScreenUI extends ScreenAdapter {
         engine.executeEnemyAction(action);
       };
       enemyUI.playAttack();
-      SequenceAction seq = Actions.sequence(
-          Actions.moveTo(targetX, targetY, 0.98f),
-          Actions.run(() -> {
-            applyLogic.run();
-          }),
-          Actions.moveTo(startX, startY, 0.98f),
-          Actions.run(new Runnable() {
-            @Override
-            public void run() {
-              enemyUI.playIdle();
-              if (onComplete != null)
-                onComplete.run();
-            }
-          }));
+      SequenceAction seq = Actions.sequence(Actions.moveTo(targetX, targetY, 0.98f), Actions.run(() -> {
+        applyLogic.run();
+      }), Actions.moveTo(startX, startY, 0.98f), Actions.run(new Runnable() {
+        @Override
+        public void run() {
+          enemyUI.playIdle();
+          if (onComplete != null)
+            onComplete.run();
+        }
+      }));
 
       enemyUI.addAction(seq);
       return;
@@ -261,16 +286,13 @@ public class BattleScreenUI extends ScreenAdapter {
     if (action.getType() == EnemyAction.Type.BUFF) {
       // простая визуализация баффа: вспышка + apply
       // enemyUI.playAttack(); // или playBuff если добавишь
-      enemyUI.addAction(Actions.sequence(
-          Actions.delay(0.4f),
-          Actions.run(() -> {
-            engine.executeEnemyAction(action);
-          }),
-          Actions.run(() -> {
-            enemyUI.playIdle();
-            if (onComplete != null)
-              onComplete.run();
-          })));
+      enemyUI.addAction(Actions.sequence(Actions.delay(0.4f), Actions.run(() -> {
+        engine.executeEnemyAction(action);
+      }), Actions.run(() -> {
+        enemyUI.playIdle();
+        if (onComplete != null)
+          onComplete.run();
+      })));
       return;
     }
 
@@ -283,9 +305,7 @@ public class BattleScreenUI extends ScreenAdapter {
 
   // Центр actor'а в координатах parent'а
   private Vector2 centerOfActorInParent(Actor actor, Group parent) {
-    Vector2 center = new Vector2(
-        actor.getWidth() / 2f,
-        actor.getHeight() / 2f);
+    Vector2 center = new Vector2(actor.getWidth() / 2f, actor.getHeight() / 2f);
     return actor.localToActorCoordinates(parent, center);
   }
 
@@ -328,11 +348,45 @@ public class BattleScreenUI extends ScreenAdapter {
     cardActor.setHighlighted(false);
 
     Card card = cardActor.getCard();
-    Object target = boardUI.findTargetAt(stageX, stageY);
+    Targetable target = boardUI.findTargetAt(stageX, stageY);
+
+    System.out.println("Target: " + target);
 
     if (target != null) {
+      System.out.println("Card: " + card.getType());
       boolean success = engine.playCardOnTarget(card, target);
+
+      System.out.println("Success: " + success);
       if (success) {
+        // // 👉 Показываем анимацию дебафа на враге
+        // if (card.getType() == CardType.DEBUFF && target instanceof
+        // io.github.some_example_name.model.Enemy) {
+        // io.github.some_example_name.model.Enemy targetEnemy =
+        // (io.github.some_example_name.model.Enemy) target;
+        // EnemyUI enemyUI = boardUI.getEnemyUI();
+
+        // if (enemyUI != null) {
+        // // создаём вспышку дебафа на центре врага
+        // BuffEffectUI effect = new BuffEffectUI(enemyUI.getX() + enemyUI.getWidth() /
+        // 2f,
+        // enemyUI.getY() + enemyUI.getHeight() / 2f);
+        // enemyUI.getParent().addActor(effect);
+        // effect.toFront();
+        // }
+        // }
+        // 👉 Показываем анимацию баффа
+        if (card.getType() == CardType.BUFF && target instanceof io.github.some_example_name.model.Unit) {
+          io.github.some_example_name.model.Unit targetUnit = (io.github.some_example_name.model.Unit) target;
+          UnitUI targetUI = boardUI.findUnitUI(targetUnit);
+
+          if (targetUI != null) {
+            BuffEffectUI effect = new BuffEffectUI(targetUI.getX() + targetUI.getWidth() / 2f,
+                targetUI.getY() + targetUI.getHeight() / 2f);
+            targetUI.getParent().addActor(effect);
+            effect.toFront();
+          }
+        }
+
         refreshBattleScreen();
       } else {
         cardActor.resetPosition();

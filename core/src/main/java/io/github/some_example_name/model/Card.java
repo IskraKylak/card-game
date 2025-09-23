@@ -59,9 +59,9 @@ public class Card {
     }
 
     // --- Вызов эффекта карты ---
-    public void play(GameContext context, Slot targetSlot) {
+    public void play(GameContext context, Targetable target) {
         if (effect != null) {
-            effect.apply(context, targetSlot);
+            effect.apply(context, target);
         }
     }
 }
