@@ -27,6 +27,7 @@ import io.github.some_example_name.model.CardType;
 import io.github.some_example_name.model.Targetable;
 import io.github.some_example_name.model.status.StatusEffect;
 import io.github.some_example_name.ui.effects.BuffEffectUI;
+import io.github.some_example_name.ui.effects.DeBuffEffectUI;
 import io.github.some_example_name.ui.elements.CardActor;
 import io.github.some_example_name.ui.elements.EnemyUI;
 import io.github.some_example_name.ui.elements.UnitUI;
@@ -358,22 +359,6 @@ public class BattleScreenUI extends ScreenAdapter {
 
       System.out.println("Success: " + success);
       if (success) {
-        // // 👉 Показываем анимацию дебафа на враге
-        // if (card.getType() == CardType.DEBUFF && target instanceof
-        // io.github.some_example_name.model.Enemy) {
-        // io.github.some_example_name.model.Enemy targetEnemy =
-        // (io.github.some_example_name.model.Enemy) target;
-        // EnemyUI enemyUI = boardUI.getEnemyUI();
-
-        // if (enemyUI != null) {
-        // // создаём вспышку дебафа на центре врага
-        // BuffEffectUI effect = new BuffEffectUI(enemyUI.getX() + enemyUI.getWidth() /
-        // 2f,
-        // enemyUI.getY() + enemyUI.getHeight() / 2f);
-        // enemyUI.getParent().addActor(effect);
-        // effect.toFront();
-        // }
-        // }
         // 👉 Показываем анимацию баффа
         if (card.getType() == CardType.BUFF && target instanceof io.github.some_example_name.model.Unit) {
           io.github.some_example_name.model.Unit targetUnit = (io.github.some_example_name.model.Unit) target;
@@ -383,6 +368,18 @@ public class BattleScreenUI extends ScreenAdapter {
             BuffEffectUI effect = new BuffEffectUI(targetUI.getX() + targetUI.getWidth() / 2f,
                 targetUI.getY() + targetUI.getHeight() / 2f);
             targetUI.getParent().addActor(effect);
+            effect.toFront();
+          }
+        }
+
+        // 👉 Показываем анимацию дебаффа
+        if (card.getType() == CardType.DEBUFF && target instanceof io.github.some_example_name.model.Enemy) {
+          EnemyUI enemyUI = boardUI.getEnemyUI();
+
+          if (enemyUI != null) {
+            DeBuffEffectUI effect = new DeBuffEffectUI(enemyUI.getX() + enemyUI.getWidth() / 2f,
+                enemyUI.getY() + enemyUI.getHeight() / 2f);
+            enemyUI.getParent().addActor(effect);
             effect.toFront();
           }
         }
