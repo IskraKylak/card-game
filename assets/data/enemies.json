@@ -1,0 +1,5 @@
+[
+  { "id": 1, "name": "Goblin", "health": 10, "attack": 2, "sprite": "game/enemies/goblin" },
+  { "id": 2, "name": "Orc", "health": 40, "attack": 3, "sprite": "game/enemies/orc" },
+  { "id": 3, "name": "Mage", "health": 12, "attack": 3, "sprite": "game/enemies/mage" }
+]

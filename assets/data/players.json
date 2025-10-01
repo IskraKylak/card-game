@@ -1,0 +1,6 @@
+[
+  { "id": 1, "name": "Light", "health": 20, "attack": 3, "defense": 4, "maxMana": 6, "faction": "LIFE" },
+  { "id": 2, "name": "Death", "health": 18, "attack": 4, "defense": 4, "maxMana": 6, "faction": "DEATH" },
+  { "id": 3, "name": "Order", "health": 22, "attack": 2, "defense": 4, "maxMana": 6, "faction": "ORDER" },
+  { "id": 4, "name": "Chaos", "health": 19, "attack": 3, "defense": 4, "maxMana": 6, "faction": "CHAOS" }
+]

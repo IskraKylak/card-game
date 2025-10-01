@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "Squeer's Call",
+    "description": "Squier is a total loser",
+    "cost": 1,
+    "type": "UNIT",
+    "faction": "LIFE",
+    "effect": { "type": "SummonUnitEffect", "unitId": 1 },
+    "image": "game/card-unit3.png"
+  },
+  {
+    "id": 2,
+    "name": "Summon a Warrior",
+    "description": "Warrior - average fighter",
+    "cost": 2,
+    "type": "UNIT",
+    "faction": "LIFE",
+    "effect": { "type": "SummonUnitEffect", "unitId": 2 },
+    "image": "game/card-unit2.png"
+  },
+  {
+    "id": 3,
+    "name": "Summoning the Knight",
+    "description": "The coolest guy so far",
+    "cost": 3,
+    "type": "UNIT",
+    "faction": "LIFE",
+    "effect": { "type": "SummonUnitEffect", "unitId": 3 },
+    "image": "game/card-unit1.png"
+  },
+  {
+    "id": 4,
+    "name": "Hit",
+    "description": "4 damage to enemy",
+    "cost": 2,
+    "type": "ATTACK",
+    "faction": "CHAOS",
+    "effect": { "type": "DamageEffect", "value": 4 },
+    "image": "game/card-hit.png"
+  },
+  {
+    "id": 10,
+    "name": "Rallying Strike",
+    "description": "Даёт юниту +3 к атаке на 2 хода",
+    "cost": 2,
+    "type": "BUFF",
+    "faction": "LIFE",
+    "effect": { "type": "BuffEffect", "status": "AttackBuffEffect", "value": 3, "duration": 2 },
+    "image": "game/card-attackPower.png"
+  },
+  {
+    "id": 11,
+    "name": "Poison",
+    "description": "Отравляет врага",
+    "cost": 3,
+    "type": "DEBUFF",
+    "faction": "LIFE",
+    "effect": { "type": "DebuffEffect", "status": "PoisonEffect", "value": 4, "duration": 3 },
+    "image": "game/card-poison.png"
+  }
+]
