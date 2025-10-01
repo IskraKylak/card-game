@@ -15,28 +15,28 @@ import io.github.some_example_name.ui.BattleScreenUI;
 
 public class CardGame extends Game {
 
-    @Override
-    public void create() {
-        // Создаём контекст
-        // Создаём игрока
-        Player player = DataPlayers.getPlayerByFaction(Faction.LIFE);
-        player.buildDefaultDeckFromFaction();
-        player.buildBattleDeck();
-        player.initBattle();
+  @Override
+  public void create() {
+    // Создаём контекст
+    // Создаём игрока
+    Player player = DataPlayers.getPlayerByFaction(Faction.LIFE);
+    player.buildDefaultDeckFromFaction();
+    player.buildBattleDeck();
+    player.initBattle();
 
-        // Создаём врага
-        Enemy enemy = DataEnemy.getEnemyById(2);
+    // Создаём врага
+    Enemy enemy = DataEnemy.getEnemyById(2);
 
-        // Контекст игры (например, 6 слотов)
-        GameContext context = new GameContext(player, enemy);
+    // Контекст игры (например, 6 слотов)
+    GameContext context = new GameContext(player, enemy);
 
-        // Движок
-        GameEngine engine = new GameEngine(context);
+    // Движок
+    GameEngine engine = new GameEngine(context);
 
-        // Загружаем skin
-        Skin skin = new Skin(Gdx.files.internal("uiskin.json"));
+    // Загружаем skin
+    Skin skin = new Skin(Gdx.files.internal("uiskin.json"));
 
-        // Передаём в UI уже весь контекст
-        setScreen(new BattleScreenUI(context, engine, skin));
-    }
+    // Передаём в UI уже весь контекст
+    setScreen(new BattleScreenUI(context, engine, skin));
+  }
 }
