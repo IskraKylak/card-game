@@ -36,7 +36,7 @@ public class CardActor extends Table {
     // descLabel.setWrap(true);
 
     // Сборка UI
-    this.add(cardImage).size(100, 150).row();
+    this.add(cardImage).size(50, 70).row();
     this.add(nameLabel).row();
     this.add(costLabel).row();
     // this.add(descLabel).width(100).row();

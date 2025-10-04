@@ -18,19 +18,26 @@ public class SummonUnitEffect implements CardEffect {
   @Override
   public boolean apply(GameContext context, Targetable target) {
     if (!(target instanceof Slot slot)) {
-      System.out.println("Суммон юнита можно применять только на слот!");
+      System.out.println("❌ Суммон юнита можно применять только на слот!");
       return false;
     }
 
     if (slot.isOccupied()) {
-      System.out.println("Слот " + slot.getId() + " занят, нельзя призвать юнита.");
+      System.out.println("❌ Слот " + slot.getId() + " занят, нельзя призвать юнита.");
       return false;
     }
 
-    // Создаём новый экземпляр юнита
+    // 1) Создаём новый экземпляр юнита
     Unit unit = DataUnits.getUnitById(unitId);
 
-    // Эмитим событие о призыве юнита
+    // 2) Обновляем модель — помещаем юнита в слот
+    slot.setUnit(unit);
+    System.out.println("✅ Юнит " + unit.getName() + " призван в слот " + slot.getId());
+
+    // 3) Планируем действия для нового юнита (чтобы сразу учитывался ИИ)
+    unit.planActions(context.getPlayer(), context.getEnemy());
+
+    // 4) Уведомляем UI через событие
     context.getEventBus().emit(
         BattleEvent.of(
             BattleEventType.UNIT_SUMMONED,

@@ -14,10 +14,4 @@ public class PoisonEffect extends AbstractStatusEffect {
   public void onTurnStart(Entity target) {
     target.takeDamage(damagePerTurn);
   }
-
-  @Override
-  public TargetingRule getTargetingRule() {
-    // ИИ будет выбирать случайного врага для этого эффекта
-    return TargetingRule.RANDOM_ENEMY;
-  }
 }

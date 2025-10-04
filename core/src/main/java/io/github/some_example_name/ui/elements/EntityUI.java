@@ -3,12 +3,14 @@ package io.github.some_example_name.ui.elements;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.*;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 import io.github.some_example_name.model.CombatEntity;
 import io.github.some_example_name.model.Entity;
 import io.github.some_example_name.ui.effects.BuffEffectUI;
+import io.github.some_example_name.ui.panels.BoardUI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +43,7 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
     String spriteFolder = entity.getSpriteFolder();
 
     idleAnimation = loadAnimation(spriteFolder, "idle", 0.2f, Animation.PlayMode.LOOP);
-    attackAnimation = loadAnimation(spriteFolder, "attack", 0.1f, Animation.PlayMode.NORMAL);
+    attackAnimation = loadAnimation(spriteFolder, "attack", 0.2f, Animation.PlayMode.NORMAL);
     deadAnimation = loadAnimation(spriteFolder, "dead", 0.1f, Animation.PlayMode.NORMAL);
     currentAnimation = idleAnimation;
 
@@ -57,6 +59,10 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
     this.add(nameLabel).padTop(2).row();
     this.add(attackLabel).padTop(2).row();
     this.add(hpLabel).padTop(2).row();
+  }
+
+  public Vector2 getCenterInBoard(BoardUI boardUI) {
+    return localToActorCoordinates(boardUI, new Vector2(getWidth() / 2f, getHeight() / 2f));
   }
 
   // --- Методы анимаций ---
@@ -110,12 +116,6 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
     nameLabel.setText(entity.getName());
     attackLabel.setText("ATK: " + entity.getAttackPower());
     hpLabel.setText("HP: " + entity.getHealth());
-
-    if (!entity.isAlive()) {
-      playDead();
-    } else if (currentAnimation != attackAnimation) {
-      playIdle();
-    }
   }
 
   // --- Рисование эффектов ---

@@ -21,6 +21,7 @@ import io.github.some_example_name.model.Targetable;
 import io.github.some_example_name.model.Unit;
 import io.github.some_example_name.ui.elements.EnemyUI;
 import io.github.some_example_name.ui.elements.EntityUI;
+import io.github.some_example_name.ui.elements.PlayerUI;
 import io.github.some_example_name.ui.elements.SlotUI;
 import io.github.some_example_name.ui.elements.UnitUI;
 
@@ -32,7 +33,7 @@ public class BoardUI extends Table {
 
   private EnemyUI enemyUI;
   private Table slotsRow;
-  private Label playerLabel;
+  private final PlayerUI playerUI;
 
   // Статический фон
   private Image backgroundImage;
@@ -42,10 +43,10 @@ public class BoardUI extends Table {
     this.engine = engine;
     this.skin = skin;
 
-    // Загружаем статический фон
-    Texture backgroundTexture = new Texture("game/board/Board.png"); // используем одну картинку
-    backgroundImage = new Image(backgroundTexture);
-    backgroundImage.setScaling(Scaling.fill); // масштабируем под весь экран, сохраняя пропорции
+    // Фон
+    Texture backgroundTexture = new Texture("game/board/Board.png");
+    Image backgroundImage = new Image(backgroundTexture);
+    backgroundImage.setScaling(Scaling.fill);
     backgroundImage.setFillParent(true);
     this.addActor(backgroundImage);
 
@@ -63,15 +64,34 @@ public class BoardUI extends Table {
     slotsRow = new Table();
     for (Slot slot : player.getSlots()) {
       SlotUI slotUI = new SlotUI(slot, skin);
-      slotsRow.add(slotUI).size(80, 120).pad(40); // сделал размеры такие же как для UnitUI
+      slotsRow.add(slotUI).size(40, 20).pad(40);
     }
-
-    // Лейбл игрока
-    playerLabel = new Label("Player HP: " + player.getHealth() + "/" + player.getMaxHealth() + " Mana: "
-        + player.getMana() + "/" + player.getMaxMana(), skin);
-
     this.add(slotsRow).expandX().top().center().padBottom(10).row();
-    this.add(playerLabel).expandX().top().center().padBottom(10).row();
+
+    // Пустое пространство
+    this.add().expand().row();
+
+    // 🔹 Добавляем PlayerUI как отдельный актёр
+    float spriteWidth = 100;
+    float spriteHeight = 90;
+    playerUI = new PlayerUI(player, skin, "game/player", spriteWidth, spriteHeight);
+    // this.addActor(playerUI);
+
+    this.add(playerUI).expandX().bottom().center().padBottom(20).row();
+  }
+
+  @Override
+  public void layout() {
+    super.layout();
+
+    if (playerUI != null) {
+      float spriteWidth = playerUI.getWidth();
+      float spriteHeight = playerUI.getHeight();
+
+      float x = (getWidth() - spriteWidth) / 2f;
+      float y = 20; // отступ от низа
+      playerUI.setPosition(x, y);
+    }
   }
 
   /**
@@ -122,38 +142,7 @@ public class BoardUI extends Table {
    * трогает порядок дочерних акторов.
    */
   public void refresh() {
-    Player player = context.getPlayer();
-
-    // -----------------------
-    // 1) Обновляем EnemyUI (только данные)
-    // -----------------------
-    if (enemyUI != null) {
-      enemyUI.refresh();
-    }
-
-    // -----------------------
-    // 2) Обновляем слоты: для каждого SlotUI вызываем slotUI.refresh()
-    // Важно: мы не заменяем slotUI в slotsRow, мы меняем только его содержимое.
-    // -----------------------
-    int index = 0;
-    for (Slot slot : player.getSlots()) {
-      // safety: index должен соответствовать порядку слотовRow (как в конструкторе)
-      if (index >= slotsRow.getChildren().size) {
-        break;
-      }
-      Actor actor = slotsRow.getChildren().get(index);
-      if (actor instanceof SlotUI) {
-        SlotUI slotUI = (SlotUI) actor;
-        slotUI.refresh(); // внутри SlotUI уже решается: показать UnitUI или Empty
-      }
-      index++;
-    }
-
-    // -----------------------
-    // 3) Обновляем лейбл игрока (только текст)
-    // -----------------------
-    playerLabel.setText("Player HP: " + player.getHealth() + "/" + player.getMaxHealth() + " Mana: " + player.getMana()
-        + "/" + player.getMaxMana());
+    refreshRecursive(this);
   }
 
   public void addUnitToSlot(Unit unit, Slot slot) {
@@ -161,6 +150,17 @@ public class BoardUI extends Table {
       if (actor instanceof SlotUI slotUI && slotUI.getSlot() == slot) {
         slotUI.setUnit(unit); // используем твой существующий метод
         return;
+      }
+    }
+  }
+
+  private void refreshRecursive(Actor actor) {
+    if (actor instanceof EntityUI<?> entityUI) {
+      entityUI.refresh();
+    }
+    if (actor instanceof Table table) {
+      for (Actor child : table.getChildren()) {
+        refreshRecursive(child);
       }
     }
   }
@@ -183,6 +183,10 @@ public class BoardUI extends Table {
     return result;
   }
 
+  public PlayerUI getPlayerUI() {
+    return playerUI;
+  }
+
   public EntityUI findEntityUI(Entity entity) {
     // 1) Проверяем юниты игрока
     for (Actor a : slotsRow.getChildren()) {
@@ -203,9 +207,5 @@ public class BoardUI extends Table {
     // if (playerUI != null && playerUI.getEntity() == entity) return playerUI;
 
     return null; // ничего не найдено
-  }
-
-  public Actor getPlayerActor() {
-    return this.playerLabel;
   }
 }

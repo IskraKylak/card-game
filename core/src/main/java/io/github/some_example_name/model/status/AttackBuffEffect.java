@@ -21,7 +21,7 @@ public class AttackBuffEffect extends AbstractStatusEffect {
   @Override
   public void onRemove(Entity entity) {
     if (entity instanceof CombatEntity ce) {
-      ce.setAttack(ce.getAttackPower() - bonusAttack);
+      // ce.setAttack(ce.getAttackPower() - bonusAttack);
     }
   }
 }

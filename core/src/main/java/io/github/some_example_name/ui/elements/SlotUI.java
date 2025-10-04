@@ -22,7 +22,7 @@ public class SlotUI extends Table {
       this.setBackground(skin.getDrawable("default-round"));
     }
 
-    contentLabel = new Label("Empty", skin);
+    contentLabel = new Label("", skin);
     this.add(contentLabel).expand().center();
   }
 

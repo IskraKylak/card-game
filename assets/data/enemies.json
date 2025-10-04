@@ -1,5 +1,28 @@
 [
-  { "id": 1, "name": "Goblin", "health": 10, "attack": 2, "sprite": "game/enemies/goblin" },
-  { "id": 2, "name": "Orc", "health": 40, "attack": 3, "sprite": "game/enemies/orc" },
-  { "id": 3, "name": "Mage", "health": 12, "attack": 3, "sprite": "game/enemies/mage" }
+  { "id": 1, "name": "Goblin", "health": 10, "attack": 2, "sprite": "game/enemies/goblin", "maxActionsPerTurn": 1, "spells": [] },
+  {
+    "id": 2,
+    "name": "Orc",
+    "health": 40,
+    "attack": 3,
+    "sprite": "game/enemies/orc",
+    "maxActionsPerTurn": 1,
+    "spells": [
+      {
+        "type": "AttackBuffEffect",
+        "duration": 2,
+        "amount": 2,
+        "targeting": "SELF" 
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Mage",
+    "health": 12,
+    "attack": 3,
+    "sprite": "game/enemies/mage",
+    "maxActionsPerTurn": 1,
+    "spells": []
+  }
 ]

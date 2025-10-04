@@ -17,6 +17,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.some_example_name.core.*;
 import io.github.some_example_name.core.effects.SummonUnitEffect;
 import io.github.some_example_name.model.*;
+import io.github.some_example_name.model.payload.UnitAttackPayload;
 import io.github.some_example_name.model.status.StatusEffect;
 import io.github.some_example_name.ui.effects.BuffEffectUI;
 import io.github.some_example_name.ui.effects.DeBuffEffectUI;
@@ -89,6 +90,92 @@ public class BattleScreenUI extends ScreenAdapter {
 
   // ===================== ПОДПИСКИ НА СОБЫТИЯ =====================
   private void subscribeToEvents() {
+    // Юнит или враг умер
+    context.getEventBus().on(BattleEventType.UNIT_DIED, event -> {
+      Object payload = event.getPayload();
+      if (payload instanceof Unit unit) {
+        EntityUI unitUI = boardUI.findEntityUI(unit);
+        if (unitUI != null) {
+          // проигрываем анимацию смерти
+          unitUI.playDead();
+
+          // после окончания анимации можно убрать с доски
+          unitUI.addAction(Actions.sequence(
+              Actions.delay(1.0f), // 1 секунда анимации смерти
+              Actions.run(() -> unitUI.remove())));
+        }
+      } else if (payload instanceof Enemy enemy) {
+        EntityUI enemyUI = boardUI.findEntityUI(enemy);
+        if (enemyUI != null) {
+          enemyUI.playDead();
+          enemyUI.addAction(Actions.sequence(
+              Actions.delay(1.0f),
+              Actions.run(() -> enemyUI.remove())));
+        }
+      }
+    });
+
+    // 🔹 Юнит или враг атакует
+    context.getEventBus().on(BattleEventType.UNIT_ATTACK, event -> {
+      UnitAttackPayload payload = (UnitAttackPayload) event.getPayload();
+      CombatEntity attacker = payload.getAttacker();
+      Targetable target = payload.getTarget();
+
+      EntityUI attackerUI = boardUI.findEntityUI(attacker);
+      if (attackerUI == null) {
+        payload.getOnComplete().run();
+        return;
+      }
+
+      Actor parent = attackerUI.getParent();
+
+      float startX = attackerUI.getX();
+      float startY = attackerUI.getY();
+
+      Vector2 targetLocal;
+      Runnable onHit;
+
+      if (target instanceof Player) {
+        PlayerUI playerUI = boardUI.getPlayerUI();
+        Vector2 center = new Vector2(playerUI.getWidth() / 2f, playerUI.getHeight() / 2f);
+        targetLocal = parent.stageToLocalCoordinates(playerUI.localToStageCoordinates(center));
+        onHit = () -> {
+          playerUI.playHit();
+          // урон в момент удара
+          context.getEventBus().emit(BattleEvent.of(
+              BattleEventType.UNIT_ATTACK_LOGIC,
+              new UnitAttackPayload(attacker, target, payload.getOnComplete())));
+        };
+      } else if (target instanceof Entity entity) {
+        EntityUI targetUI = boardUI.findEntityUI(entity);
+        if (targetUI == null) {
+          payload.getOnComplete().run();
+          return;
+        }
+        Vector2 center = new Vector2(targetUI.getWidth() / 2f, targetUI.getHeight() / 2f);
+        targetLocal = parent.stageToLocalCoordinates(targetUI.localToStageCoordinates(center));
+        onHit = () -> {
+          targetUI.playHit();
+          // урон в момент удара
+          attacker.performAttack(target);
+          context.getEventBus().emit(BattleEvent.of(BattleEventType.ENTITY_DAMAGED, target));
+        };
+      } else {
+        payload.getOnComplete().run();
+        return;
+      }
+
+      targetLocal.x -= attackerUI.getWidth() / 2f;
+      targetLocal.y -= attackerUI.getHeight() / 2f;
+
+      attackerUI.addAction(Actions.sequence(
+          Actions.run(attackerUI::playAttack),
+          Actions.moveTo(targetLocal.x, targetLocal.y, 0.5f),
+          Actions.run(onHit), // ← вот тут удар и урон
+          Actions.moveTo(startX, startY, 0.5f),
+          Actions.run(attackerUI::playIdle),
+          Actions.run(payload.getOnComplete())));
+    });
 
     // Юнит призван
     context.getEventBus().on(BattleEventType.UNIT_SUMMONED, event -> {
@@ -108,9 +195,9 @@ public class BattleScreenUI extends ScreenAdapter {
 
     // 🔹 Статус эффект удалён
     context.getEventBus().on(BattleEventType.STATUS_REMOVED, event -> {
-      StatusEffect effect = (StatusEffect) event.getPayload();
+      // StatusEffect effect = (StatusEffect) event.getPayload();
       // Можно добавить анимацию исчезновения эффекта
-      boardUI.refresh();
+
     });
 
     // 🔹 Бафф
@@ -122,6 +209,7 @@ public class BattleScreenUI extends ScreenAdapter {
         entityUI.getParent().addActor(effectUI);
         effectUI.toFront();
       }
+      boardUI.refresh();
     });
 
     // 🔹 Дебафф
@@ -152,6 +240,7 @@ public class BattleScreenUI extends ScreenAdapter {
       if (engine.isBattleOver()) {
         showBattleResult(engine.getWinner());
       } else {
+        engine.startPlayerTurn();
         engine.drawCards(context.getPlayer().getStartingHandSize());
         refreshBattleScreen();
         statusPanelUI.getEndTurnButton().setDisabled(false);
@@ -176,7 +265,7 @@ public class BattleScreenUI extends ScreenAdapter {
 
   // ===================== UI ОБНОВЛЕНИЕ =====================
   public void refreshBattleScreen() {
-    boardUI.refresh();
+    // boardUI.refresh();
     playerPanelUI.refresh();
     statusPanelUI.update();
   }

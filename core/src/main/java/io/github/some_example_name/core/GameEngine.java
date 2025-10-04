@@ -1,11 +1,10 @@
 package io.github.some_example_name.core;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
-import io.github.some_example_name.core.effects.SummonUnitEffect;
 import io.github.some_example_name.model.*;
+import io.github.some_example_name.model.payload.UnitAttackPayload;
 import io.github.some_example_name.model.status.StatusEffect;
 
 public class GameEngine {
@@ -17,6 +16,13 @@ public class GameEngine {
     this.context = context;
     this.random = new Random();
     startBattle();
+
+    context.getEventBus().on(BattleEventType.UNIT_ATTACK_LOGIC, evt -> {
+      UnitAttackPayload p = (UnitAttackPayload) evt.getPayload();
+      p.getAttacker().performAttack(p.getTarget());
+      context.getEventBus().emit(BattleEvent.of(BattleEventType.ENTITY_DAMAGED, p.getTarget()));
+      p.getOnComplete().run();
+    });
   }
 
   // -------------------- ИНИЦИАЛИЗАЦИЯ БОЯ --------------------
@@ -25,8 +31,22 @@ public class GameEngine {
     player.initBattle();
     player.restoreMana(player.getMaxMana());
 
+    // Очистка слотов игрока
     for (Slot slot : player.getSlots()) {
       slot.removeUnit();
+    }
+
+    // Планирование хода врага на первый раунд
+    Enemy enemy = context.getEnemy();
+    enemy.planActions(player, enemy);
+
+    // Если в слотах уже есть юниты (на случай предзагруженного состояния),
+    // планируем их действия
+    for (Slot slot : player.getSlots()) {
+      Unit unit = slot.getUnit();
+      if (unit != null) {
+        unit.planActions(player, enemy);
+      }
     }
   }
 
@@ -88,38 +108,178 @@ public class GameEngine {
     // Для врага можно добавить аналогично, если будет список юнитов
   }
 
-  public void executeEnemyAction(EnemyAction action) {
-    Enemy enemy = context.getEnemy();
-    Player player = context.getPlayer();
+  // -------------------- ПОИСК СЛОТА ПО ЮНИТУ --------------------
+  private Slot findSlotForUnit(Unit unit, Player player) {
+    if (unit == null || player == null || player.getSlots() == null)
+      return null;
 
-    switch (action.getType()) {
-      case ATTACK:
-        if (action.getTargetUnit() != null) {
-          Unit target = action.getTargetUnit();
-          target.takeDamage(action.getAmount());
-          context.getEventBus().emit(BattleEvent.of(BattleEventType.ENTITY_DAMAGED, target));
-        } else {
-          player.takeDamage(action.getAmount());
-          context.getEventBus().emit(BattleEvent.of(BattleEventType.ENTITY_DAMAGED, player));
-        }
-        break;
-
-      case BUFF:
-        enemy.heal(action.getAmount());
-        context.getEventBus().emit(BattleEvent.of(BattleEventType.ENTITY_BUFFED, enemy));
-        break;
-
-      case NONE:
-      default:
-        break;
+    for (Slot slot : player.getSlots()) {
+      if (unit.equals(slot.getUnit())) {
+        return slot;
+      }
     }
 
-    removeDeadUnits();
+    return null;
   }
 
   // -------------------- END TURN --------------------
-  public void endPlayerTurn(Runnable callback) {
+  public void endPlayerTurn(Runnable onTurnEnd) {
+    Player player = context.getPlayer();
+    Enemy enemy = context.getEnemy();
 
+    TurnProcessor turnProcessor = new TurnProcessor();
+    turnProcessor.setOnTurnEnd(onTurnEnd);
+
+    // 1️⃣ Ход юнитов игрока
+    for (Slot slot : player.getSlots()) {
+      Unit unit = slot.getUnit();
+      if (unit == null || !unit.isAlive())
+        continue;
+
+      // Эффекты юнита
+      for (StatusEffect effect : new ArrayList<>(unit.getStatusEffects())) {
+        turnProcessor.addAction(() -> {
+          effect.onTurnStart(unit);
+          if (!effect.tick(unit)) {
+            effect.onRemove(unit);
+            unit.removeStatusEffect(effect);
+          }
+          turnProcessor.runNext();
+        });
+      }
+
+      // Действия юнита
+      for (ActionPlan.Action action : new ArrayList<>(unit.getActionPlan().getActions())) {
+        turnProcessor.addAction(() -> {
+          Targetable target = action.getTarget();
+
+          // Перепланируем если цель уже мертва
+          if (target instanceof Unit targetUnit && !targetUnit.isAlive()) {
+            unit.planActions(player, enemy);
+            target = unit.getActionPlan().getActions().get(0).getTarget();
+          } else if (target instanceof Enemy targetEnemy && targetEnemy.getHealth() <= 0) {
+            unit.planActions(player, enemy);
+            target = unit.getActionPlan().getActions().get(0).getTarget();
+          }
+
+          switch (action.getType()) {
+            case ATTACK -> {
+              Unit finalUnit = unit;
+              Targetable finalTarget = target;
+              context.getEventBus().emit(BattleEvent.of(
+                  BattleEventType.UNIT_ATTACK,
+                  new UnitAttackPayload(finalUnit, finalTarget, () -> {
+                    // finalUnit.performAttack(finalTarget);
+
+                    // 🔹 Эмитим урон
+                    // context.getEventBus().emit(BattleEvent.of(BattleEventType.ENTITY_DAMAGED,
+                    // finalTarget));
+
+                    // 🔹 Проверяем смерть
+                    if (finalTarget instanceof Unit deadUnit && !deadUnit.isAlive()) {
+                      context.getEventBus().emit(BattleEvent.of(BattleEventType.UNIT_DIED, deadUnit));
+
+                      Slot deadUnitSlot = findSlotForUnit(deadUnit, player); // функция ищет слот по юниту
+                      if (deadUnitSlot != null) {
+                        deadUnitSlot.removeUnit();
+                      }
+                    } else if (finalTarget instanceof Enemy deadEnemy && deadEnemy.getHealth() <= 0) {
+                      context.getEventBus().emit(BattleEvent.of(BattleEventType.UNIT_DIED, deadEnemy));
+                    } else if (finalTarget instanceof Player playerTarget && playerTarget.getHealth() <= 0) {
+                      context.getEventBus().emit(BattleEvent.of(BattleEventType.PLAYER_DIED, playerTarget));
+                    }
+
+                    turnProcessor.runNext();
+                  })));
+            }
+            case CAST_SPELL -> {
+              StatusEffect effect = action.getEffect();
+              if (effect != null && target instanceof Entity entityTarget) {
+                effect.onApply(entityTarget);
+                entityTarget.addStatusEffect(effect);
+              }
+              turnProcessor.runNext();
+            }
+          }
+        });
+      }
+
+      unit.getActionPlan().clear();
+    }
+
+    // 2️⃣ Ход врага
+    if (enemy != null && enemy.getHealth() > 0) {
+      // Эффекты врага
+      for (StatusEffect effect : new ArrayList<>(enemy.getStatusEffects())) {
+        turnProcessor.addAction(() -> {
+          effect.onTurnStart(enemy);
+          if (!effect.tick(enemy)) {
+            effect.onRemove(enemy);
+            enemy.removeStatusEffect(effect);
+          }
+          turnProcessor.runNext();
+        });
+      }
+
+      // Планирование врага
+      if (enemy.getActionPlan().getActions().isEmpty()) {
+        enemy.planActions(player, enemy);
+      }
+
+      for (ActionPlan.Action action : new ArrayList<>(enemy.getActionPlan().getActions())) {
+        turnProcessor.addAction(() -> {
+          Targetable target = action.getTarget();
+
+          if (target instanceof Unit targetUnit && !targetUnit.isAlive()) {
+            enemy.planActions(player, enemy);
+            target = enemy.getActionPlan().getActions().get(0).getTarget();
+          }
+
+          switch (action.getType()) {
+            case ATTACK -> {
+              Enemy finalEnemy = enemy;
+              Targetable finalTarget = target;
+              context.getEventBus().emit(BattleEvent.of(
+                  BattleEventType.UNIT_ATTACK,
+                  new UnitAttackPayload(finalEnemy, finalTarget, () -> {
+                    // finalEnemy.performAttack(finalTarget);
+
+                    context.getEventBus().emit(BattleEvent.of(BattleEventType.ENTITY_DAMAGED, finalTarget));
+
+                    if (finalTarget instanceof Unit deadUnit && !deadUnit.isAlive()) {
+                      context.getEventBus().emit(BattleEvent.of(BattleEventType.UNIT_DIED, deadUnit));
+
+                      Slot deadUnitSlot = findSlotForUnit(deadUnit, player); // функция ищет слот по юниту
+                      if (deadUnitSlot != null) {
+                        deadUnitSlot.removeUnit();
+                      }
+
+                    } else if (finalTarget instanceof Enemy deadEnemy && deadEnemy.getHealth() <= 0) {
+                      context.getEventBus().emit(BattleEvent.of(BattleEventType.UNIT_DIED, deadEnemy));
+                    } else if (finalTarget instanceof Player playerTarget && playerTarget.getHealth() <= 0) {
+                      context.getEventBus().emit(BattleEvent.of(BattleEventType.PLAYER_DIED, playerTarget));
+                    }
+
+                    turnProcessor.runNext();
+                  })));
+            }
+            case CAST_SPELL -> {
+              StatusEffect effect = action.getEffect();
+              if (effect != null && target instanceof Entity entityTarget) {
+                effect.onApply(entityTarget);
+                entityTarget.addStatusEffect(effect);
+              }
+              turnProcessor.runNext();
+            }
+          }
+        });
+      }
+
+      enemy.getActionPlan().clear();
+    }
+
+    // 🚀 Старт очереди
+    turnProcessor.runNext();
   }
 
   // -------------------- КОЛОДА --------------------
@@ -161,31 +321,41 @@ public class GameEngine {
 
   public void startPlayerTurn() {
     Player player = context.getPlayer();
+    Enemy enemy = context.getEnemy();
 
-    // 1️⃣ Планирование юнитов
+    // 1️⃣ Обновление карт, маны и эффектов
+    player.restoreMana(player.getMaxMana());
+    drawCards(player.getStartingHandSize());
+
+    // 2️⃣ Планируем действия юнитов игрока
     for (Slot slot : player.getSlots()) {
       Unit unit = slot.getUnit();
       if (unit != null) {
+        System.out.println("В слоте есть юнит: " + unit.getName());
+        unit.planActions(player, enemy);
+      } else {
+        System.out.println("В слоте нет юнита.");
       }
     }
 
+    // 3️⃣ Планируем действия врага
+    enemy.planActions(player, enemy);
   }
 
-  public void executeTurn() {
-    Player player = context.getPlayer();
-
-    // 1️⃣ Юниты выполняют свои действия
-    for (Slot slot : player.getSlots()) {
-      Unit unit = slot.getUnit();
-      if (unit != null) {
-
-      }
+  public boolean summonUnit(Unit unit, Slot targetSlot) {
+    if (targetSlot.getUnit() != null) {
+      System.out.println("Слот уже занят, нельзя призвать юнита!");
+      return false;
     }
 
-    // 3️⃣ Начало нового хода игрока: сброс карт, новые карты, манна
-    player.getDiscard().addAll(player.getHand());
-    player.getHand().clear();
-    drawCards(player.getStartingHandSize());
-    player.restoreMana(player.getMaxMana());
+    targetSlot.setUnit(unit);
+    System.out.println("Призван юнит " + unit.getName() + " в слот " + targetSlot);
+
+    // Планируем действия новопоявившегося юнита
+    unit.planActions(context.getPlayer(), context.getEnemy());
+
+    // Отправляем событие для UI
+    context.getEventBus().emit(BattleEvent.of(BattleEventType.UNIT_SUMMONED, unit));
+    return true;
   }
 }
