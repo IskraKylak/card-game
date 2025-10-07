@@ -7,7 +7,8 @@
     "type": "UNIT",
     "faction": "LIFE",
     "effect": { "type": "SummonUnitEffect", "unitId": 1 },
-    "image": "game/card-unit3.png"
+    "image": "game/card-unit3.png",
+    "isBurnOnPlay": true
   },
   {
     "id": 2,
@@ -17,7 +18,8 @@
     "type": "UNIT",
     "faction": "LIFE",
     "effect": { "type": "SummonUnitEffect", "unitId": 2 },
-    "image": "game/card-unit2.png"
+    "image": "game/card-unit2.png",
+    "isBurnOnPlay": true
   },
   {
     "id": 3,
@@ -27,27 +29,30 @@
     "type": "UNIT",
     "faction": "LIFE",
     "effect": { "type": "SummonUnitEffect", "unitId": 3 },
-    "image": "game/card-unit1.png"
+    "image": "game/card-unit1.png",
+    "isBurnOnPlay": true
   },
   {
     "id": 4,
     "name": "Hit",
     "description": "4 damage to enemy",
-    "cost": 2,
+    "cost": 1,
     "type": "ATTACK",
-    "faction": "CHAOS",
+    "faction": "LIFE",
     "effect": { "type": "DamageEffect", "value": 4 },
-    "image": "game/card-hit.png"
+    "image": "game/card-hit.png",
+    "isBurnOnPlay": false
   },
   {
     "id": 10,
     "name": "Rallying Strike",
-    "description": "Даёт юниту +3 к атаке на 2 хода",
+    "description": "Даёт юниту +3 к атаке на 1 хода",
     "cost": 2,
     "type": "BUFF",
     "faction": "LIFE",
-    "effect": { "type": "BuffEffect", "status": "AttackBuffEffect", "value": 3, "duration": 2 },
-    "image": "game/card-attackPower.png"
+    "effect": { "type": "BuffEffect", "status": "AttackBuffEffect", "value": 2, "duration": 0 },
+    "image": "game/card-attackPower.png",
+    "isBurnOnPlay": false
   },
   {
     "id": 11,
@@ -57,6 +62,7 @@
     "type": "DEBUFF",
     "faction": "LIFE",
     "effect": { "type": "DebuffEffect", "status": "PoisonEffect", "value": 4, "duration": 3 },
-    "image": "game/card-poison.png"
+    "image": "game/card-poison.png",
+    "isBurnOnPlay": false
   }
 ]

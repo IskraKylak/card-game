@@ -13,7 +13,16 @@ public class AttackBuffEffect extends AbstractStatusEffect {
 
   @Override
   public void onApply(Entity entity) {
+    if (duration <= 0)
+      return; // мгновенно не применяем
     if (entity instanceof CombatEntity ce) {
+      ce.setAttack(ce.getAttackPower() + bonusAttack);
+    }
+  }
+
+  @Override
+  public void onTurnStart(Entity target) {
+    if (target instanceof CombatEntity ce) {
       ce.setAttack(ce.getAttackPower() + bonusAttack);
     }
   }

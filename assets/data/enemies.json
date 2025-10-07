@@ -10,8 +10,8 @@
     "spells": [
       {
         "type": "AttackBuffEffect",
-        "duration": 2,
-        "amount": 2,
+        "duration": 1,
+        "amount": 3,
         "targeting": "SELF" 
       }
     ]

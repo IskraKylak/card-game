@@ -97,8 +97,41 @@ public class Player extends Entity {
     Random rnd = new Random();
     List<Card> factionCards = DataCards.createFactionCards(faction);
 
-    for (int i = 0; i < 10; i++) {
-      Card c = factionCards.get(rnd.nextInt(factionCards.size()));
+    // Найдём карту Hit в списке фракции
+    Card hitCard = null;
+    for (Card c : factionCards) {
+      if (c.getId() == 4) { // ID карты Hit
+        hitCard = c;
+        break;
+      }
+    }
+
+    if (hitCard != null) {
+      for (int i = 0; i < 5; i++) {
+        Card copy = new Card(
+            hitCard.getId(),
+            hitCard.getName(),
+            hitCard.getDescription(),
+            hitCard.getCost(),
+            hitCard.getType(),
+            hitCard.getFaction(),
+            hitCard.getEffect(),
+            hitCard.getImagePath(),
+            hitCard.isBurnOnPlay());
+        defaultDeck.add(copy);
+      }
+    }
+
+    // Выбираем 5 случайных карт, кроме Hit
+    List<Card> otherCards = new ArrayList<>();
+    for (Card c : factionCards) {
+      if (c.getId() != 4) {
+        otherCards.add(c);
+      }
+    }
+
+    for (int i = 0; i < 5 && !otherCards.isEmpty(); i++) {
+      Card c = otherCards.remove(rnd.nextInt(otherCards.size()));
       Card copy = new Card(
           c.getId(),
           c.getName(),
@@ -107,9 +140,13 @@ public class Player extends Entity {
           c.getType(),
           c.getFaction(),
           c.getEffect(),
-          c.getImagePath());
+          c.getImagePath(),
+          c.isBurnOnPlay());
       defaultDeck.add(copy);
     }
+
+    // В конце можно перемешать колоду, если нужно
+    Collections.shuffle(defaultDeck);
   }
 
   public void buildBattleDeck() {

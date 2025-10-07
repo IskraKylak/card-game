@@ -16,9 +16,9 @@ public class PlayerLoader {
     int id;
     String name;
     int health;
-    int attack;
-    int defense;
     int maxMana;
+    int maxHand;
+    int maxUnits;
     String faction;
   }
 
@@ -31,7 +31,8 @@ public class PlayerLoader {
 
       List<Player> players = new ArrayList<>();
       for (PlayerJson p : data) {
-        Player player = new Player(p.id, p.name, p.health, p.attack, p.defense, p.maxMana, Faction.valueOf(p.faction));
+        Player player = new Player(p.id, p.name, p.health, p.maxMana, p.maxHand, p.maxUnits,
+            Faction.valueOf(p.faction));
         players.add(player);
       }
       return players;

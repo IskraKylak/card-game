@@ -1,14 +1,18 @@
 package io.github.some_example_name.ui.elements;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+
 import io.github.some_example_name.model.Card;
 import io.github.some_example_name.model.CardType;
 import io.github.some_example_name.model.Enemy;
@@ -20,6 +24,7 @@ public class CardActor extends Table {
   private float grabOffsetX, grabOffsetY;
   private float startX, startY;
   private final BattleScreenUI battleScreenUI;
+  private Image highlightImage; // 👈 поле класса (например, внутри CellUI)
 
   public CardActor(Card card, Skin skin, BattleScreenUI battleScreenUI) {
     this.card = card;
@@ -98,11 +103,26 @@ public class CardActor extends Table {
 
   public void setHighlighted(boolean highlighted) {
     if (highlighted) {
-      this.setColor(0, 1, 0, 1); // зелёный оттенок
-      this.setDebug(true); // включаем рамку, если используешь debug
-    } else {
-      this.setColor(1, 1, 1, 1); // возвращаем стандартный вид
-      this.setDebug(false);
+      if (highlightImage == null) {
+        Texture texture = new Texture(Gdx.files.internal("game/highlight.png"));
+        highlightImage = new Image(new TextureRegionDrawable(new TextureRegion(texture)));
+        highlightImage.setTouchable(Touchable.disabled);
+
+        // 🔹 Размер рамки под саму картинку карты (фиксированный)
+        float imageWidth = 150f;
+        float imageHeight = 170f;
+
+        // 🔹 Центрируем по горизонтали, опускаем вниз под карту
+        float x = (getWidth() - imageWidth) / 2f;
+        float y = (getHeight() - imageHeight) / 2f - 5f; // чуть ниже центра
+
+        highlightImage.setBounds(x, y, imageWidth, imageHeight);
+        addActorAt(0, highlightImage); // под контент
+      }
+
+      highlightImage.setVisible(true);
+    } else if (highlightImage != null) {
+      highlightImage.setVisible(false);
     }
   }
 

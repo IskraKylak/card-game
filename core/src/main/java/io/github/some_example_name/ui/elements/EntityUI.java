@@ -23,14 +23,16 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
   protected Animation<TextureRegion> attackAnimation;
   protected Animation<TextureRegion> hitAnimation;
   protected Animation<TextureRegion> deadAnimation;
+  protected Animation<TextureRegion> magicAnimation;
   protected Animation<TextureRegion> currentAnimation;
 
   protected float stateTime = 0f;
 
   protected Image entityImage;
   protected Label nameLabel;
-  protected Label attackLabel;
-  protected Label hpLabel;
+  // protected Label attackLabel;
+  // protected Label hpLabel;
+  protected Label paramLabel;
 
   // 🔹 иконки эффектов
   private static final Texture BUFF_ICON = new Texture(Gdx.files.internal("game/icons/buff.png"));
@@ -43,8 +45,9 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
     String spriteFolder = entity.getSpriteFolder();
 
     idleAnimation = loadAnimation(spriteFolder, "idle", 0.2f, Animation.PlayMode.LOOP);
-    attackAnimation = loadAnimation(spriteFolder, "attack", 0.2f, Animation.PlayMode.NORMAL);
+    attackAnimation = loadAnimation(spriteFolder, "attack", 0.2f, Animation.PlayMode.LOOP);
     deadAnimation = loadAnimation(spriteFolder, "dead", 0.1f, Animation.PlayMode.NORMAL);
+    magicAnimation = loadAnimation(spriteFolder, "magic", 0.2f, Animation.PlayMode.LOOP);
     currentAnimation = idleAnimation;
 
     TextureRegion firstFrame = idleAnimation != null ? idleAnimation.getKeyFrame(0) : null;
@@ -52,13 +55,13 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
     entityImage.setSize(spriteWidth, spriteHeight);
 
     nameLabel = new Label(entity.getName(), skin);
-    attackLabel = new Label("ATK: " + entity.getAttackPower(), skin);
-    hpLabel = new Label("HP: " + entity.getHealth(), skin);
+    paramLabel = new Label("ATK: " + entity.getAttackPower() + " " + "HP: " + entity.getHealth(), skin);
+    // hpLabel = new Label(), skin);
 
+    this.add(paramLabel).padTop(2).row();
     this.add(entityImage).size(spriteWidth, spriteHeight).row();
-    this.add(nameLabel).padTop(2).row();
-    this.add(attackLabel).padTop(2).row();
-    this.add(hpLabel).padTop(2).row();
+    // this.add(nameLabel).padTop(2).row();
+
   }
 
   public Vector2 getCenterInBoard(BoardUI boardUI) {
@@ -68,6 +71,11 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
   // --- Методы анимаций ---
   public void playIdle() {
     currentAnimation = idleAnimation;
+    stateTime = 0f;
+  }
+
+  public void playMagic() {
+    currentAnimation = magicAnimation;
     stateTime = 0f;
   }
 
@@ -90,17 +98,17 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
     stateTime = 0f;
   }
 
-  public void playBuffAnimation() {
-    BuffEffectUI effect = new BuffEffectUI(getWidth(), getHeight());
-    addActor(effect);
-    effect.toFront();
-  }
+  // public void playBuffAnimation() {
+  // BuffEffectUI effect = new BuffEffectUI(getWidth(), getHeight());
+  // addActor(effect);
+  // effect.toFront();
+  // }
 
-  public void playDebuffAnimation() {
-    BuffEffectUI effect = new BuffEffectUI(getWidth(), getHeight());
-    addActor(effect);
-    effect.toFront();
-  }
+  // public void playDebuffAnimation() {
+  // BuffEffectUI effect = new BuffEffectUI(getWidth(), getHeight());
+  // addActor(effect);
+  // effect.toFront();
+  // }
 
   // --- Центр для эффектов ---
   public float getCenterX() {
@@ -113,9 +121,12 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
 
   // --- Обновление UI ---
   public void refresh() {
-    nameLabel.setText(entity.getName());
-    attackLabel.setText("ATK: " + entity.getAttackPower());
-    hpLabel.setText("HP: " + entity.getHealth());
+    // nameLabel.setText(entity.getName());
+
+    // attackLabel.setText("ATK: " + entity.getAttackPower());
+    // hpLabel.setText("HP: " + entity.getHealth());
+
+    paramLabel.setText("ATK: " + entity.getAttackPower() + " " + "HP: " + entity.getHealth());
   }
 
   // --- Рисование эффектов ---

@@ -12,19 +12,30 @@ public class DeBuffEffectUI extends Actor {
 
   private Animation<TextureRegion> animation;
   private float stateTime = 0f;
+  private Runnable onComplete;
 
-  public DeBuffEffectUI(float centerX, float centerY) {
+  public DeBuffEffectUI(float centerX, float centerY, Runnable onComplete) {
+    this.onComplete = onComplete;
+
     // Загружаем кадры
     Array<TextureRegion> frames = new Array<>();
-    for (int i = 1; i <= 18; i++) { // допустим 5 кадров: buff_glow1.png ... buff_glow5.png
+    for (int i = 1; i <= 24; i++) {
       Texture tex = new Texture(Gdx.files.internal("game/effects/debuff" + i + ".png"));
       frames.add(new TextureRegion(tex));
     }
 
     animation = new Animation<>(0.1f, frames, Animation.PlayMode.NORMAL);
 
-    setSize(450, 420); // размер эффекта
-    setPosition(centerX - getWidth() / 2f - 20f, centerY - getHeight() / 2f + 20f);
+    setSize(180, 140); // размер эффекта
+    setPosition(centerX - getWidth() / 2f, centerY - getHeight() / 2f);
+  }
+
+  public float getStateTime() {
+    return stateTime;
+  }
+
+  public Animation<TextureRegion> getAnimation() {
+    return animation;
   }
 
   @Override
@@ -32,8 +43,13 @@ public class DeBuffEffectUI extends Actor {
     super.act(delta);
     stateTime += delta;
 
+    // Проверяем окончание анимации
     if (animation.isAnimationFinished(stateTime)) {
-      remove(); // удаляем после окончания анимации
+      remove(); // удаляем актор
+      if (onComplete != null) {
+        onComplete.run(); // вызываем продолжение очереди
+        onComplete = null; // чтобы не вызвать дважды
+      }
     }
   }
 

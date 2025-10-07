@@ -33,6 +33,12 @@ public enum BattleEventType {
 
   UNIT_ATTACK_LOGIC,
 
+  UNIT_CAST_SPELL,
+
+  STATUS_EFFECT_TRIGGERED,
+
+  STATUS_EFFECT_APPLIED,
+
   // вспомогательные
   ANIMATION_COMPLETED
 }

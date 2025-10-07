@@ -1,14 +1,20 @@
 package io.github.some_example_name.ui;
 
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -17,7 +23,11 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.some_example_name.core.*;
 import io.github.some_example_name.core.effects.SummonUnitEffect;
 import io.github.some_example_name.model.*;
+import io.github.some_example_name.model.data.DataEnemy;
+import io.github.some_example_name.model.data.DataPlayers;
+import io.github.some_example_name.model.payload.StatusEffectPayload;
 import io.github.some_example_name.model.payload.UnitAttackPayload;
+import io.github.some_example_name.model.payload.UnitSpellPayload;
 import io.github.some_example_name.model.status.StatusEffect;
 import io.github.some_example_name.ui.effects.BuffEffectUI;
 import io.github.some_example_name.ui.effects.DeBuffEffectUI;
@@ -90,19 +100,41 @@ public class BattleScreenUI extends ScreenAdapter {
 
   // ===================== ПОДПИСКИ НА СОБЫТИЯ =====================
   private void subscribeToEvents() {
+    // Юнит кастует заклинание
+    context.getEventBus().on(BattleEventType.UNIT_CAST_SPELL, evt -> {
+      UnitSpellPayload payload = (UnitSpellPayload) evt.getPayload();
+
+      Entity caster = payload.getCaster();
+      Runnable onComplete = payload.getOnComplete();
+
+      EntityUI<?> casterUI = boardUI.findEntityUI(caster);
+
+      if (casterUI == null) {
+        System.out.println("Ошибка: юнит не найден на доске!");
+        onComplete.run();
+        return;
+      }
+
+      System.out.println("Юнит кастует заклинание: " + casterUI.getEntity().getName());
+      casterUI.addAction(Actions.sequence(
+          Actions.run(() -> casterUI.playMagic()),
+          Actions.delay(3.0f), // ⏳ подожди три секунды (или длительность твоей маг-анимации)
+          Actions.run(() -> casterUI.playIdle()),
+          Actions.run(() -> boardUI.refresh()),
+          Actions.run(onComplete)));
+    });
+
     // Юнит или враг умер
     context.getEventBus().on(BattleEventType.UNIT_DIED, event -> {
       Object payload = event.getPayload();
+
       if (payload instanceof Unit unit) {
         EntityUI unitUI = boardUI.findEntityUI(unit);
         if (unitUI != null) {
-          // проигрываем анимацию смерти
           unitUI.playDead();
-
-          // после окончания анимации можно убрать с доски
           unitUI.addAction(Actions.sequence(
-              Actions.delay(1.0f), // 1 секунда анимации смерти
-              Actions.run(() -> unitUI.remove())));
+              Actions.delay(1.0f),
+              Actions.run(unitUI::remove)));
         }
       } else if (payload instanceof Enemy enemy) {
         EntityUI enemyUI = boardUI.findEntityUI(enemy);
@@ -110,8 +142,37 @@ public class BattleScreenUI extends ScreenAdapter {
           enemyUI.playDead();
           enemyUI.addAction(Actions.sequence(
               Actions.delay(1.0f),
-              Actions.run(() -> enemyUI.remove())));
+              Actions.run(enemyUI::remove)));
         }
+
+        Skin newSkin = new Skin(Gdx.files.internal("uiskin.json"));
+        TextButton restartButton = new TextButton("Restart Game", newSkin);
+        restartButton.setPosition(
+            stage.getWidth() / 2f - restartButton.getWidth() / 2f,
+            stage.getHeight() / 2f - restartButton.getHeight() / 2f);
+
+        restartButton.addListener(new ChangeListener() {
+          @Override
+          public void changed(ChangeEvent event, Actor actor) {
+            restartButton.remove();
+
+            Player newPlayer = DataPlayers.getPlayerByFaction(Faction.LIFE);
+            newPlayer.buildDefaultDeckFromFaction();
+            newPlayer.buildBattleDeck();
+            newPlayer.initBattle();
+
+            Enemy newEnemy = DataEnemy.getEnemyById(2);
+
+            GameContext newContext = new GameContext(newPlayer, newEnemy);
+            GameEngine newEngine = new GameEngine(newContext);
+
+            Skin newSkin = new Skin(Gdx.files.internal("uiskin.json"));
+            BattleScreenUI newScreen = new BattleScreenUI(newContext, newEngine, newSkin);
+            ((Game) Gdx.app.getApplicationListener()).setScreen(newScreen);
+          }
+        });
+
+        stage.addActor(restartButton);
       }
     });
 
@@ -128,53 +189,69 @@ public class BattleScreenUI extends ScreenAdapter {
       }
 
       Actor parent = attackerUI.getParent();
-
       float startX = attackerUI.getX();
       float startY = attackerUI.getY();
 
       Vector2 targetLocal;
       Runnable onHit;
 
+      // 🎯 Если атакуем игрока
       if (target instanceof Player) {
         PlayerUI playerUI = boardUI.getPlayerUI();
-        Vector2 center = new Vector2(playerUI.getWidth() / 2f, playerUI.getHeight() / 2f);
-        targetLocal = parent.stageToLocalCoordinates(playerUI.localToStageCoordinates(center));
+        Vector2 hitPoint = new Vector2(playerUI.getWidth() / 2f, playerUI.getHeight() * 0.2f); // в ноги
+        targetLocal = parent.stageToLocalCoordinates(playerUI.localToStageCoordinates(hitPoint));
         onHit = () -> {
           playerUI.playHit();
-          // урон в момент удара
           context.getEventBus().emit(BattleEvent.of(
               BattleEventType.UNIT_ATTACK_LOGIC,
               new UnitAttackPayload(attacker, target, payload.getOnComplete())));
         };
-      } else if (target instanceof Entity entity) {
+      }
+
+      // 🎯 Если атакуем врага / юнита
+      else if (target instanceof Entity entity) {
         EntityUI targetUI = boardUI.findEntityUI(entity);
         if (targetUI == null) {
           payload.getOnComplete().run();
           return;
         }
-        Vector2 center = new Vector2(targetUI.getWidth() / 2f, targetUI.getHeight() / 2f);
-        targetLocal = parent.stageToLocalCoordinates(targetUI.localToStageCoordinates(center));
+
+        Vector2 hitPoint = new Vector2(targetUI.getWidth() / 2f, targetUI.getHeight() * 0.2f); // в ноги
+        targetLocal = parent.stageToLocalCoordinates(targetUI.localToStageCoordinates(hitPoint));
+
         onHit = () -> {
           targetUI.playHit();
-          // урон в момент удара
           attacker.performAttack(target);
           context.getEventBus().emit(BattleEvent.of(BattleEventType.ENTITY_DAMAGED, target));
         };
-      } else {
+      }
+
+      else {
         payload.getOnComplete().run();
         return;
       }
 
+      // Центрируем
       targetLocal.x -= attackerUI.getWidth() / 2f;
-      targetLocal.y -= attackerUI.getHeight() / 2f;
+      targetLocal.y -= attackerUI.getHeight() * 0.25f;
 
+      // 💾 Сохраняем старый Z-индекс
+      int originalZ = attackerUI.getZIndex();
+
+      // ⬆️ Поднимаем атакующего на передний план
+      attackerUI.setZIndex(attackerUI.getParent().getChildren().size - 1);
+
+      // 🌀 Последовательность действий
       attackerUI.addAction(Actions.sequence(
-          Actions.run(attackerUI::playAttack),
-          Actions.moveTo(targetLocal.x, targetLocal.y, 0.5f),
-          Actions.run(onHit), // ← вот тут удар и урон
-          Actions.moveTo(startX, startY, 0.5f),
-          Actions.run(attackerUI::playIdle),
-          Actions.run(payload.getOnComplete())));
+          Actions.moveTo(targetLocal.x, targetLocal.y, 0.5f), // подлетает
+          Actions.run(attackerUI::playAttack), // анимация атаки
+          Actions.delay(1.0f), // ждём завершения анимации удара
+          Actions.run(onHit), // урон и событие
+          Actions.moveTo(startX, startY, 0.25f), // возвращается
+          Actions.run(attackerUI::playIdle), // ставим в idle
+          Actions.run(() -> attackerUI.setZIndex(originalZ)), // 👈 возвращаем в исходный слой
+          Actions.run(payload.getOnComplete()) // продолжаем ход
+      ));
     });
 
     // Юнит призван
@@ -194,33 +271,71 @@ public class BattleScreenUI extends ScreenAdapter {
     });
 
     // 🔹 Статус эффект удалён
+    context.getEventBus().on(BattleEventType.STATUS_EFFECT_APPLIED, event -> {
+      boardUI.refresh();
+    });
+
+    // 🔹 Статус эффект удалён
     context.getEventBus().on(BattleEventType.STATUS_REMOVED, event -> {
       // StatusEffect effect = (StatusEffect) event.getPayload();
       // Можно добавить анимацию исчезновения эффекта
+      boardUI.refresh();
+    });
 
+    // 🔹 Статус эффект применён (бафф или дебафф)
+    context.getEventBus().on(BattleEventType.STATUS_EFFECT_TRIGGERED, evt -> {
+      StatusEffectPayload payload = (StatusEffectPayload) evt.getPayload();
+      Entity target = payload.getTarget();
+      StatusEffect effect = payload.getEffect();
+      Runnable onComplete = payload.getOnComplete();
+
+      EntityUI<?> targetUI = boardUI.findEntityUI(target);
+      if (targetUI == null) {
+        onComplete.run();
+        return;
+      }
+
+      boolean isDebuff = effect.isNegative();
+
+      // Эффект будет добавляться внутрь самой модельки
+      Actor effectActor;
+      float centerX = targetUI.getWidth() / 2f; // теперь локальные координаты внутри Table
+      float centerY = targetUI.getHeight() * 0.35f;
+
+      if (isDebuff) {
+        effectActor = new DeBuffEffectUI(centerX, centerY, onComplete);
+      } else {
+        effectActor = new BuffEffectUI(centerX, centerY, onComplete);
+      }
+
+      // Добавляем внутрь самой UI-модельки, а не на сцену
+      targetUI.addActor(effectActor);
     });
 
     // 🔹 Бафф
     context.getEventBus().on(BattleEventType.ENTITY_BUFFED, event -> {
-      Entity entity = (Entity) event.getPayload();
-      EntityUI entityUI = boardUI.findEntityUI(entity);
-      if (entityUI != null) {
-        BuffEffectUI effectUI = new BuffEffectUI(entityUI.getCenterX(), entityUI.getCenterY());
-        entityUI.getParent().addActor(effectUI);
-        effectUI.toFront();
-      }
+      // Entity entity = (Entity) event.getPayload();
+      // EntityUI entityUI = boardUI.findEntityUI(entity);
+      // if (entityUI != null) {
+      // BuffEffectUI effectUI = new BuffEffectUI(entityUI.getCenterX(),
+      // entityUI.getCenterY());
+      // entityUI.getParent().addActor(effectUI);
+      // effectUI.toFront();
+      // }
       boardUI.refresh();
     });
 
     // 🔹 Дебафф
     context.getEventBus().on(BattleEventType.ENTITY_DEBUFFED, event -> {
-      Entity entity = (Entity) event.getPayload();
-      EntityUI entityUI = boardUI.findEntityUI(entity);
-      if (entityUI != null) {
-        DeBuffEffectUI effectUI = new DeBuffEffectUI(entityUI.getCenterX(), entityUI.getCenterY());
-        entityUI.getParent().addActor(effectUI);
-        effectUI.toFront();
-      }
+      // Entity entity = (Entity) event.getPayload();
+      // EntityUI entityUI = boardUI.findEntityUI(entity);
+      // if (entityUI != null) {
+      // DeBuffEffectUI effectUI = new DeBuffEffectUI(entityUI.getCenterX(),
+      // entityUI.getCenterY());
+      // entityUI.getParent().addActor(effectUI);
+      // effectUI.toFront();
+      // }
+      boardUI.refresh();
     });
 
   }

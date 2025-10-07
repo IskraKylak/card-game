@@ -12,9 +12,10 @@ public class Card {
     private final Faction faction;
     private final CardEffect effect; // Эффект карты
     private final String imagePath; // Путь к изображению карты
+    private final boolean burnOnPlay; // 👈 новый флаг
 
     public Card(int id, String name, String description, int manaCost, CardType type, Faction faction,
-            CardEffect effect, String imagePath) {
+            CardEffect effect, String imagePath, boolean burnOnPlay) { // 👈 новый парамет р
         this.id = id;
         this.name = name;
         this.description = description;
@@ -23,6 +24,11 @@ public class Card {
         this.faction = faction;
         this.effect = effect;
         this.imagePath = imagePath;
+        this.burnOnPlay = burnOnPlay; // 👈 инициализация
+    }
+
+    public boolean isBurnOnPlay() {
+        return burnOnPlay;
     }
 
     public String getImagePath() {

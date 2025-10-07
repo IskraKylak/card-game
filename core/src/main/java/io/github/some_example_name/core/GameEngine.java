@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import io.github.some_example_name.model.*;
+import io.github.some_example_name.model.payload.StatusEffectPayload;
 import io.github.some_example_name.model.payload.UnitAttackPayload;
+import io.github.some_example_name.model.payload.UnitSpellPayload;
 import io.github.some_example_name.model.status.StatusEffect;
 
 public class GameEngine {
@@ -86,7 +88,20 @@ public class GameEngine {
 
     if (applied) {
       player.setMana(player.getMana() - card.getCost());
-      player.playCard(card);
+
+      // 🔥 Проверка: карта сгорает после розыгрыша?
+      if (card.isBurnOnPlay()) {
+        System.out.println("🔥 Карта " + card.getName() + " сгорает после розыгрыша!");
+
+        // Удаляем карту полностью из игры
+        player.getHand().remove(card);
+        player.getBattleDeck().remove(card);
+        player.getDiscard().remove(card);
+        // при желании можно добавить player.getRemovedFromGame().add(card);
+      } else {
+        // Обычное поведение — карта уходит в сброс
+        player.playCard(card);
+      }
       context.getEventBus().emit(BattleEvent.of(BattleEventType.CARD_PLAYED, card));
     }
 
@@ -139,12 +154,21 @@ public class GameEngine {
       // Эффекты юнита
       for (StatusEffect effect : new ArrayList<>(unit.getStatusEffects())) {
         turnProcessor.addAction(() -> {
-          effect.onTurnStart(unit);
-          if (!effect.tick(unit)) {
-            effect.onRemove(unit);
-            unit.removeStatusEffect(effect);
-          }
-          turnProcessor.runNext();
+          // 🔹 Эмитим событие для эффекта (с анимацией)
+          context.getEventBus().emit(BattleEvent.of(
+              BattleEventType.STATUS_EFFECT_TRIGGERED,
+              new StatusEffectPayload(unit, effect, () -> {
+                // 🔹 Логика эффекта после окончания анимации
+                effect.onTurnStart(unit);
+
+                if (!effect.tick(unit)) {
+                  effect.onRemove(unit);
+                  unit.removeStatusEffect(effect);
+                }
+
+                // 🔹 Продолжаем очередь после завершения эффекта
+                turnProcessor.runNext();
+              })));
         });
       }
 
@@ -193,13 +217,25 @@ public class GameEngine {
                   })));
             }
             case CAST_SPELL -> {
+              Unit finalUnit = unit;
+              Targetable finalTarget = target;
               StatusEffect effect = action.getEffect();
-              if (effect != null && target instanceof Entity entityTarget) {
-                effect.onApply(entityTarget);
-                entityTarget.addStatusEffect(effect);
-              }
-              turnProcessor.runNext();
+
+              // 🔹 Эмитим событие применения заклинания (аналогично атаке)
+              context.getEventBus().emit(BattleEvent.of(
+                  BattleEventType.UNIT_CAST_SPELL,
+                  new UnitSpellPayload(finalUnit, finalTarget, effect, () -> {
+
+                    if (effect != null && finalTarget instanceof Entity entityTarget) {
+                      effect.onApply(entityTarget);
+                      entityTarget.addStatusEffect(effect);
+                    }
+
+                    // Завершаем ход после применения эффекта
+                    turnProcessor.runNext();
+                  })));
             }
+
           }
         });
       }
@@ -210,14 +246,24 @@ public class GameEngine {
     // 2️⃣ Ход врага
     if (enemy != null && enemy.getHealth() > 0) {
       // Эффекты врага
+
       for (StatusEffect effect : new ArrayList<>(enemy.getStatusEffects())) {
         turnProcessor.addAction(() -> {
-          effect.onTurnStart(enemy);
-          if (!effect.tick(enemy)) {
-            effect.onRemove(enemy);
-            enemy.removeStatusEffect(effect);
-          }
-          turnProcessor.runNext();
+          // 🔹 Эмитим событие для эффекта (без ожидания анимации)
+          context.getEventBus().emit(BattleEvent.of(
+              BattleEventType.STATUS_EFFECT_TRIGGERED,
+              new StatusEffectPayload(enemy, effect, () -> {
+                // 🔹 Логика эффекта после срабатывания
+                effect.onTurnStart(enemy);
+
+                if (!effect.tick(enemy)) {
+                  effect.onRemove(enemy);
+                  enemy.removeStatusEffect(effect);
+                }
+
+                // 🔹 Продолжаем очередь
+                turnProcessor.runNext();
+              })));
         });
       }
 
@@ -264,12 +310,26 @@ public class GameEngine {
                   })));
             }
             case CAST_SPELL -> {
+              Enemy finalEnemy = enemy;
+              Targetable finalTarget = target;
               StatusEffect effect = action.getEffect();
-              if (effect != null && target instanceof Entity entityTarget) {
-                effect.onApply(entityTarget);
-                entityTarget.addStatusEffect(effect);
-              }
-              turnProcessor.runNext();
+
+              System.out.println("Враг кастует заклинание: " + finalEnemy.getName());
+
+              // 🔹 Эмитим событие, чтобы UI проиграл анимацию магии врага
+              context.getEventBus().emit(BattleEvent.of(
+                  BattleEventType.UNIT_CAST_SPELL,
+                  new UnitSpellPayload(finalEnemy, finalTarget, effect, () -> {
+
+                    // 🔹 После анимации применяем эффект
+                    if (effect != null && finalTarget instanceof Entity entityTarget) {
+                      effect.onApply(entityTarget);
+                      entityTarget.addStatusEffect(effect);
+                    }
+
+                    // 🔹 И только потом продолжаем ход
+                    turnProcessor.runNext();
+                  })));
             }
           }
         });

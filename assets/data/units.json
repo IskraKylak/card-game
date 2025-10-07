@@ -1,5 +1,5 @@
 [
   { "id": 1, "name": "Squire", "health": 4, "attack": 1, "sprite": "game/units/squire", "maxActionsPerTurn": 1, "spells": [] },
   { "id": 2, "name": "Warrior", "health": 2, "attack": 4, "sprite": "game/units/warrior", "maxActionsPerTurn": 1, "spells": [] },
-  { "id": 3, "name": "Infantryman", "health": 4, "attack": 2, "sprite": "game/units/infantryman", "maxActionsPerTurn": 1, "spells": [] }
+  { "id": 3, "name": "Infantryman", "health": 8, "attack": 2, "sprite": "game/units/infantryman", "maxActionsPerTurn": 1, "spells": [] }
 ]

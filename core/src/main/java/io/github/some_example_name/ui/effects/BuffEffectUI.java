@@ -9,21 +9,22 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.utils.Array;
 
 public class BuffEffectUI extends Actor {
-
   private Animation<TextureRegion> animation;
   private float stateTime = 0f;
+  private Runnable onComplete;
 
-  public BuffEffectUI(float centerX, float centerY) {
-    // Загружаем кадры
+  public BuffEffectUI(float centerX, float centerY, Runnable onComplete) {
+    this.onComplete = onComplete;
+
     Array<TextureRegion> frames = new Array<>();
-    for (int i = 1; i <= 6; i++) { // допустим 5 кадров: buff_glow1.png ... buff_glow5.png
+    for (int i = 1; i <= 24; i++) {
       Texture tex = new Texture(Gdx.files.internal("game/effects/buff_glow" + i + ".png"));
       frames.add(new TextureRegion(tex));
     }
 
     animation = new Animation<>(0.2f, frames, Animation.PlayMode.NORMAL);
 
-    setSize(150, 120); // размер эффекта
+    setSize(180, 140);
     setPosition(centerX - getWidth() / 2f, centerY - getHeight() / 2f);
   }
 
@@ -32,8 +33,13 @@ public class BuffEffectUI extends Actor {
     super.act(delta);
     stateTime += delta;
 
+    // Ждём окончания анимации
     if (animation.isAnimationFinished(stateTime)) {
-      remove(); // удаляем после окончания анимации
+      remove();
+      if (onComplete != null) {
+        onComplete.run();
+        onComplete = null; // чтобы случайно не вызвать дважды
+      }
     }
   }
 

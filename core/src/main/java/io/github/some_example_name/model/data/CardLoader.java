@@ -1,6 +1,7 @@
 package io.github.some_example_name.model.data;
 
 import java.io.FileReader;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,9 +10,7 @@ import com.google.gson.reflect.TypeToken;
 
 import io.github.some_example_name.core.effects.*;
 import io.github.some_example_name.model.*;
-
-import io.github.some_example_name.model.status.AttackBuffEffect;
-import io.github.some_example_name.model.status.PoisonEffect;
+import io.github.some_example_name.model.status.StatusEffect;
 import io.github.some_example_name.model.status.TargetingRule;
 
 public class CardLoader {
@@ -25,14 +24,15 @@ public class CardLoader {
     String faction;
     EffectJson effect;
     String image;
+    boolean isBurnOnPlay;
   }
 
   private static class EffectJson {
-    String type; // DamageEffect, BuffEffect, etc
+    String type;
     Integer value;
     Integer duration;
     Integer unitId;
-    String status; // AttackBuffEffect, PoisonEffect
+    String status;
   }
 
   public static List<Card> loadCards(String path) {
@@ -43,29 +43,9 @@ public class CardLoader {
           }.getType());
 
       List<Card> result = new ArrayList<>();
+
       for (CardJson c : data) {
-        CardEffect effect = null;
-
-        switch (c.effect.type) {
-          case "SummonUnitEffect":
-            effect = new SummonUnitEffect(c.effect.unitId);
-            break;
-          case "DamageEffect":
-            effect = new DamageEffect(c.effect.value);
-            break;
-          case "BuffEffect":
-            if ("AttackBuffEffect".equals(c.effect.status)) {
-              effect = new BuffEffect(
-                  () -> new AttackBuffEffect(c.effect.value, c.effect.duration, TargetingRule.NONE));
-            }
-            break;
-          case "DebuffEffect":
-            if ("PoisonEffect".equals(c.effect.status)) {
-              effect = new DebuffEffect(() -> new PoisonEffect(c.effect.value, c.effect.duration, TargetingRule.NONE));
-            }
-            break;
-        }
-
+        CardEffect effect = createEffect(c.effect);
         Card card = new Card(
             c.id,
             c.name,
@@ -74,14 +54,61 @@ public class CardLoader {
             CardType.valueOf(c.type),
             Faction.valueOf(c.faction),
             effect,
-            c.image);
+            c.image,
+            c.isBurnOnPlay);
 
         result.add(card);
       }
       return result;
+
     } catch (Exception e) {
       e.printStackTrace();
       return new ArrayList<>();
+    }
+  }
+
+  // 👇 создаёт эффекты динамически
+  private static CardEffect createEffect(EffectJson e) {
+    try {
+      switch (e.type) {
+        case "SummonUnitEffect":
+          return new SummonUnitEffect(e.unitId);
+
+        case "DamageEffect":
+          return new DamageEffect(e.value);
+
+        case "BuffEffect":
+          return new BuffEffect(() -> (StatusEffect) createStatus(e.status, e.value, e.duration));
+
+        case "DebuffEffect":
+          return new DebuffEffect(() -> (StatusEffect) createStatus(e.status, e.value, e.duration));
+
+        default:
+          System.err.println("⚠️ Unknown effect type: " + e.type);
+          return null;
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      return null;
+    }
+  }
+
+  // 👇 создаёт status-эффект по названию класса (из JSON)
+  private static Object createStatus(String className, int value, int duration) {
+    try {
+      // полный путь к классу
+      String fullName = "io.github.some_example_name.model.status." + className;
+
+      // получаем класс и конструктор
+      Class<?> clazz = Class.forName(fullName);
+      Constructor<?> ctor = clazz.getConstructor(int.class, int.class, TargetingRule.class);
+
+      // создаём объект
+      return ctor.newInstance(value, duration, TargetingRule.NONE);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
     }
   }
 }
