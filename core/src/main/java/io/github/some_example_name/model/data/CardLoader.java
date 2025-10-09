@@ -104,7 +104,7 @@ public class CardLoader {
       Constructor<?> ctor = clazz.getConstructor(int.class, int.class, TargetingRule.class);
 
       // создаём объект
-      return ctor.newInstance(value, duration, TargetingRule.NONE);
+      return ctor.newInstance(duration, value, TargetingRule.NONE);
 
     } catch (Exception e) {
       e.printStackTrace();

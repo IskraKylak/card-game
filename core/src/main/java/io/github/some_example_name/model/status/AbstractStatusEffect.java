@@ -6,7 +6,7 @@ public abstract class AbstractStatusEffect implements StatusEffect {
   protected final String name;
   protected int duration;
   protected final StatusType type;
-  private final TargetingRule targetingRule;
+  protected TargetingRule targetingRule;
 
   protected AbstractStatusEffect(String name, int duration, StatusType type, TargetingRule targetingRule) {
     this.name = name;

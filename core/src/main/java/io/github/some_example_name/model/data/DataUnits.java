@@ -18,8 +18,9 @@ public class DataUnits {
     // загружаем юнитов из JSON
     List<Unit> unitsFromJson = UnitLoader.loadUnits(PATH);
     for (Unit u : unitsFromJson) {
-      unitTemplates.put(u.getId(), new UnitTemplate(u.getName(), u.getHealth(), u.getAttackPower(), u.getSpriteFolder(),
-          u.getMaxActionsPerTurn(), u.getSpells()));
+      unitTemplates.put(u.getId(),
+          new UnitTemplate(u.getName(), u.getDescription(), u.getHealth(), u.getAttackPower(), u.getSpriteFolder(),
+              u.getMaxActionsPerTurn(), u.getSpells()));
     }
   }
 
@@ -29,7 +30,8 @@ public class DataUnits {
     if (template == null)
       throw new IllegalArgumentException("Unknown unit id: " + unitId);
 
-    return new Unit(generateUniqueId(), template.name, template.health, template.attack, template.sprite,
+    return new Unit(generateUniqueId(), template.name, template.description, template.health, template.attack,
+        template.sprite,
         template.maxActionsPerTurn, template.spells);
   }
 
@@ -39,14 +41,17 @@ public class DataUnits {
 
   private static class UnitTemplate {
     final String name;
+    final String description;
     final int health;
     final int attack;
     final String sprite;
     final int maxActionsPerTurn;
     final List<StatusEffect> spells;
 
-    UnitTemplate(String name, int health, int attack, String sprite, int maxActionsPerTurn, List<StatusEffect> spells) {
+    UnitTemplate(String name, String description, int health, int attack, String sprite, int maxActionsPerTurn,
+        List<StatusEffect> spells) {
       this.name = name;
+      this.description = description;
       this.health = health;
       this.attack = attack;
       this.sprite = sprite;

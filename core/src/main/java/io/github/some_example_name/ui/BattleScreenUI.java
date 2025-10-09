@@ -49,6 +49,8 @@ public class BattleScreenUI extends ScreenAdapter {
   private final float WORLD_HEIGHT = 720f;
 
   public BattleScreenUI(GameContext context, GameEngine engine, Skin skin) {
+    SoundManager.load();
+
     this.context = context;
     this.engine = engine;
 
@@ -102,6 +104,7 @@ public class BattleScreenUI extends ScreenAdapter {
   private void subscribeToEvents() {
     // Юнит кастует заклинание
     context.getEventBus().on(BattleEventType.UNIT_CAST_SPELL, evt -> {
+      SoundManager.play("magic");
       UnitSpellPayload payload = (UnitSpellPayload) evt.getPayload();
 
       Entity caster = payload.getCaster();
@@ -115,7 +118,7 @@ public class BattleScreenUI extends ScreenAdapter {
         return;
       }
 
-      System.out.println("Юнит кастует заклинание: " + casterUI.getEntity().getName());
+      System.out.println("Анимация каста заклинания: ");
       casterUI.addAction(Actions.sequence(
           Actions.run(() -> casterUI.playMagic()),
           Actions.delay(3.0f), // ⏳ подожди три секунды (или длительность твоей маг-анимации)
@@ -144,40 +147,45 @@ public class BattleScreenUI extends ScreenAdapter {
               Actions.delay(1.0f),
               Actions.run(enemyUI::remove)));
         }
-
-        Skin newSkin = new Skin(Gdx.files.internal("uiskin.json"));
-        TextButton restartButton = new TextButton("Restart Game", newSkin);
-        restartButton.setPosition(
-            stage.getWidth() / 2f - restartButton.getWidth() / 2f,
-            stage.getHeight() / 2f - restartButton.getHeight() / 2f);
-
-        restartButton.addListener(new ChangeListener() {
-          @Override
-          public void changed(ChangeEvent event, Actor actor) {
-            restartButton.remove();
-
-            Player newPlayer = DataPlayers.getPlayerByFaction(Faction.LIFE);
-            newPlayer.buildDefaultDeckFromFaction();
-            newPlayer.buildBattleDeck();
-            newPlayer.initBattle();
-
-            Enemy newEnemy = DataEnemy.getEnemyById(2);
-
-            GameContext newContext = new GameContext(newPlayer, newEnemy);
-            GameEngine newEngine = new GameEngine(newContext);
-
-            Skin newSkin = new Skin(Gdx.files.internal("uiskin.json"));
-            BattleScreenUI newScreen = new BattleScreenUI(newContext, newEngine, newSkin);
-            ((Game) Gdx.app.getApplicationListener()).setScreen(newScreen);
-          }
-        });
-
-        stage.addActor(restartButton);
       }
+    });
+
+    context.getEventBus().on(BattleEventType.RESTART, event -> {
+      boardUI.refresh();
+
+      Skin newSkin = new Skin(Gdx.files.internal("uiskin.json"));
+      TextButton restartButton = new TextButton("Restart Game", newSkin);
+      restartButton.setPosition(
+          stage.getWidth() / 2f - restartButton.getWidth() / 2f,
+          stage.getHeight() / 2f - restartButton.getHeight() / 2f);
+
+      restartButton.addListener(new ChangeListener() {
+        @Override
+        public void changed(ChangeEvent event, Actor actor) {
+          restartButton.remove();
+
+          Player newPlayer = DataPlayers.getPlayerByFaction(Faction.LIFE);
+          newPlayer.buildDefaultDeckFromFaction();
+          newPlayer.buildBattleDeck();
+          newPlayer.initBattle();
+
+          Enemy newEnemy = DataEnemy.getEnemyById(3);
+
+          GameContext newContext = new GameContext(newPlayer, newEnemy);
+          GameEngine newEngine = new GameEngine(newContext);
+
+          Skin newSkin = new Skin(Gdx.files.internal("uiskin.json"));
+          BattleScreenUI newScreen = new BattleScreenUI(newContext, newEngine, newSkin);
+          ((Game) Gdx.app.getApplicationListener()).setScreen(newScreen);
+        }
+      });
+
+      stage.addActor(restartButton);
     });
 
     // 🔹 Юнит или враг атакует
     context.getEventBus().on(BattleEventType.UNIT_ATTACK, event -> {
+      SoundManager.play("attack");
       UnitAttackPayload payload = (UnitAttackPayload) event.getPayload();
       CombatEntity attacker = payload.getAttacker();
       Targetable target = payload.getTarget();
@@ -212,6 +220,11 @@ public class BattleScreenUI extends ScreenAdapter {
       else if (target instanceof Entity entity) {
         EntityUI targetUI = boardUI.findEntityUI(entity);
         if (targetUI == null) {
+          payload.getOnComplete().run();
+          return;
+        }
+
+        if (parent == null || parent.getStage() == null || targetUI.getStage() == null) {
           payload.getOnComplete().run();
           return;
         }
@@ -303,13 +316,16 @@ public class BattleScreenUI extends ScreenAdapter {
       float centerY = targetUI.getHeight() * 0.35f;
 
       if (isDebuff) {
+        SoundManager.play("debuff");
         effectActor = new DeBuffEffectUI(centerX, centerY, onComplete);
       } else {
+        SoundManager.play("buff");
         effectActor = new BuffEffectUI(centerX, centerY, onComplete);
       }
 
       // Добавляем внутрь самой UI-модельки, а не на сцену
       targetUI.addActor(effectActor);
+      boardUI.refresh();
     });
 
     // 🔹 Бафф
@@ -355,8 +371,6 @@ public class BattleScreenUI extends ScreenAdapter {
       if (engine.isBattleOver()) {
         showBattleResult(engine.getWinner());
       } else {
-        engine.startPlayerTurn();
-        engine.drawCards(context.getPlayer().getStartingHandSize());
         refreshBattleScreen();
         statusPanelUI.getEndTurnButton().setDisabled(false);
       }
@@ -371,8 +385,12 @@ public class BattleScreenUI extends ScreenAdapter {
 
     if (target != null) {
       boolean success = engine.playCardOnTarget(card, target);
-      if (!success)
+      if (success) {
+        // 🔊 Играем звук успешного розыгрыша карты
+        SoundManager.play("cart-play");
+      } else {
         cardActor.resetPosition();
+      }
     } else {
       cardActor.resetPosition();
     }

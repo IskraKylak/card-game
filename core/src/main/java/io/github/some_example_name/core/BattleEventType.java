@@ -39,6 +39,8 @@ public enum BattleEventType {
 
   STATUS_EFFECT_APPLIED,
 
+  RESTART,
+
   // вспомогательные
   ANIMATION_COMPLETED
 }

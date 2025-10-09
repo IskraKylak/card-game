@@ -1,13 +1,10 @@
 package io.github.some_example_name.model.data;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.some_example_name.model.Enemy;
-import io.github.some_example_name.model.status.AttackBuffEffect;
-import io.github.some_example_name.model.status.PoisonEffect;
 import io.github.some_example_name.model.status.StatusEffect;
 import io.github.some_example_name.model.status.TargetingRule;
 
@@ -33,6 +30,7 @@ public class EnemyLoader {
 
         int id = jo.has("id") ? jo.get("id").getAsInt() : 0;
         String name = jo.has("name") ? jo.get("name").getAsString() : "Unknown";
+        String description = jo.has("description") ? jo.get("description").getAsString() : "";
         int health = jo.has("health") ? jo.get("health").getAsInt() : 1;
         int attack = jo.has("attack") ? jo.get("attack").getAsInt() : 0;
         String sprite = jo.has("sprite") ? jo.get("sprite").getAsString() : "";
@@ -50,49 +48,41 @@ public class EnemyLoader {
           }
         }
 
-        enemies.add(new Enemy(id, name, health, attack, sprite, maxActions, spells));
+        enemies.add(new Enemy(id, name, description, health, attack, sprite, maxActions, spells));
       }
 
     } catch (Exception ex) {
       ex.printStackTrace();
-      // на случай ошибки возвращаем то, что успели загрузить (или пустой список)
     }
 
     return enemies;
   }
 
-  // парсер одного объекта заклинания из JSON -> StatusEffect
+  // Динамическое создание эффектов через рефлексию
   private static StatusEffect deserializeEffect(JsonObject o) {
-    // допустимые ключи: "type" или "effectType"
-    String type = null;
-    if (o.has("type"))
-      type = o.get("type").getAsString();
-    else if (o.has("effectType"))
-      type = o.get("effectType").getAsString();
+    String type = o.has("type") ? o.get("type").getAsString()
+        : o.has("effectType") ? o.get("effectType").getAsString()
+            : null;
     if (type == null)
       return null;
 
-    switch (type) {
-      case "AttackBuff":
-      case "AttackBuffEffect": {
-        int bonus = o.has("bonusAttack") ? o.get("bonusAttack").getAsInt()
-            : o.has("bonus") ? o.get("bonus").getAsInt() : 1;
-        int duration = o.has("duration") ? o.get("duration").getAsInt() : 1;
-        TargetingRule tr = parseTargetingRule(o);
-        return new AttackBuffEffect(bonus, duration, tr);
-      }
-      case "Poison":
-      case "PoisonEffect": {
-        int duration = o.has("duration") ? o.get("duration").getAsInt() : 1;
-        int dmg = o.has("damagePerTurn") ? o.get("damagePerTurn").getAsInt()
-            : o.has("damage") ? o.get("damage").getAsInt() : 1;
-        TargetingRule tr = parseTargetingRule(o);
-        return new PoisonEffect(duration, dmg, tr);
-      }
-      // добавляй case для других эффектов по мере необходимости
-      default:
-        System.out.println("Unknown effect type in JSON: " + type);
-        return null;
+    int duration = o.has("duration") ? o.get("duration").getAsInt() : 1;
+    int amount = o.has("amount") ? o.get("amount").getAsInt()
+        : o.has("damagePerTurn") ? o.get("damagePerTurn").getAsInt()
+            : o.has("damage") ? o.get("damage").getAsInt()
+                : 1;
+    TargetingRule tr = parseTargetingRule(o);
+
+    try {
+      // Собираем полное имя класса
+      String className = "io.github.some_example_name.model.status." + type;
+      Class<?> clazz = Class.forName(className);
+      return (StatusEffect) clazz.getConstructor(int.class, int.class, TargetingRule.class)
+          .newInstance(duration, amount, tr);
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println("Не удалось создать эффект: " + type);
+      return null;
     }
   }
 

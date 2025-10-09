@@ -8,9 +8,10 @@ import io.github.some_example_name.model.status.StatusEffect;
 public class Enemy extends CombatEntity {
   private String spriteFolder;
 
-  public Enemy(int id, String name, int health, int attackPower, String spriteFolder, int maxActionsPerTurn,
+  public Enemy(int id, String name, String description, int health, int attackPower, String spriteFolder,
+      int maxActionsPerTurn,
       List<StatusEffect> spells) {
-    super(id, name, health, attackPower, maxActionsPerTurn, spells);
+    super(id, name, description, health, attackPower, maxActionsPerTurn, spells);
     this.spriteFolder = spriteFolder;
   }
 

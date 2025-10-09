@@ -212,6 +212,6 @@ public class Player extends Entity {
 
   @Override
   public String getSpriteFolder() {
-    return "player_sprites/"; // путь к спрайтам игрока
+    return "game/player/"; // путь к спрайтам игрока
   }
 }

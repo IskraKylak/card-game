@@ -22,8 +22,18 @@ public class BuffEffect implements CardEffect {
       Unit unit = (Unit) target;
       StatusEffect effect = effectSupplier.get(); // ← создаём новый экземпляр
 
-      effect.onTurnStart(unit);
+      // 🔹 Проверяем, есть ли такой эффект у юнита
+      StatusEffect existing = unit.getStatusEffects().stream()
+          .filter(e -> e.getName().equals(effect.getName())) // можно e.getClass() == effect.getClass()
+          .findFirst()
+          .orElse(null);
 
+      if (existing != null) {
+        existing.onRemove(unit);
+        unit.removeStatusEffect(existing);
+      }
+      // ✅ Сначала применяем мгновенный эффект, если есть
+      effect.onApply(unit);
       context.getEventBus().emit(BattleEvent.of(
           BattleEventType.STATUS_EFFECT_APPLIED,
           new StatusEffectPayload(unit, effect, () -> {

@@ -17,7 +17,7 @@ public class DataEnemy {
     List<Enemy> enemies = EnemyLoader.loadEnemies(PATH);
     for (Enemy e : enemies) {
       enemyTemplates.put(e.getId(),
-          new EnemyTemplate(e.getName(), e.getHealth(), e.getAttackPower(), e.getSpriteFolder(),
+          new EnemyTemplate(e.getName(), e.getDescription(), e.getHealth(), e.getAttackPower(), e.getSpriteFolder(),
               e.getMaxActionsPerTurn(), e.getSpells()));
     }
   }
@@ -28,7 +28,8 @@ public class DataEnemy {
     if (template == null) {
       throw new IllegalArgumentException("Unknown enemy id: " + enemyId);
     }
-    return new Enemy(generateUniqueId(), template.name, template.health, template.attack, template.sprite,
+    return new Enemy(generateUniqueId(), template.name, template.description, template.health, template.attack,
+        template.sprite,
         template.maxActionsPerTurn, template.spells);
   }
 
@@ -41,15 +42,17 @@ public class DataEnemy {
   // Шаблон врага
   private static class EnemyTemplate {
     final String name;
+    final String description;
     final int health;
     final int attack;
     final String sprite;
     final int maxActionsPerTurn;
     final List<StatusEffect> spells; // можно добавить позже
 
-    EnemyTemplate(String name, int health, int attack, String sprite, int maxActionsPerTurn,
+    EnemyTemplate(String name, String description, int health, int attack, String sprite, int maxActionsPerTurn,
         List<StatusEffect> spells) {
       this.name = name;
+      this.description = description;
       this.health = health;
       this.attack = attack;
       this.sprite = sprite;

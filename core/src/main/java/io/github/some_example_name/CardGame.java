@@ -17,6 +17,11 @@ public class CardGame extends Game {
 
   @Override
   public void create() {
+
+    BattleMusic battleMusic = new BattleMusic();
+
+    battleMusic.play(); // при начале боя
+
     // Создаём контекст
     // Создаём игрока
     Player player = DataPlayers.getPlayerByFaction(Faction.LIFE);
@@ -25,7 +30,7 @@ public class CardGame extends Game {
     player.initBattle();
 
     // Создаём врага
-    Enemy enemy = DataEnemy.getEnemyById(2);
+    Enemy enemy = DataEnemy.getEnemyById(3);
 
     // Контекст игры (например, 6 слотов)
     GameContext context = new GameContext(player, enemy);

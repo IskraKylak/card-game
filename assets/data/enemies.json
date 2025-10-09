@@ -1,8 +1,9 @@
 [
-  { "id": 1, "name": "Goblin", "health": 10, "attack": 2, "sprite": "game/enemies/goblin", "maxActionsPerTurn": 1, "spells": [] },
+  { "id": 1, "name": "Goblin", "description": "Goblin is a small and sneaky creature.", "health": 10, "attack": 2, "sprite": "game/enemies/goblin", "maxActionsPerTurn": 1, "spells": [] },
   {
     "id": 2,
     "name": "Orc",
+    "description": "Orc is a total loser",
     "health": 40,
     "attack": 3,
     "sprite": "game/enemies/orc",
@@ -12,17 +13,31 @@
         "type": "AttackBuffEffect",
         "duration": 1,
         "amount": 3,
-        "targeting": "SELF" 
+        "targetingRule": "SELF" 
       }
     ]
   },
   {
     "id": 3,
-    "name": "Mage",
-    "health": 12,
-    "attack": 3,
-    "sprite": "game/enemies/mage",
+    "name": "Mistic",
+    "description": "Mistic is a master of elemental magic.",
+    "health": 100,
+    "attack": 1,
+    "sprite": "game/enemies/mistic",
     "maxActionsPerTurn": 1,
-    "spells": []
+    "spells": [
+      {
+        "type": "PoisonEffect",
+        "duration": 3,
+        "amount": 3,
+        "targetingRule": "ENEMY"
+      },
+      {
+        "type": "AttackBuffEffect",
+        "duration": 1,
+        "amount": 2,
+        "targetingRule": "SELF" 
+      }
+    ]
   }
 ]

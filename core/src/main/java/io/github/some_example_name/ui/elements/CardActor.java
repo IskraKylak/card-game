@@ -1,5 +1,9 @@
 package io.github.some_example_name.ui.elements;
 
+// В начало импортов добавь:
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import io.github.some_example_name.ui.windows.CardInfoWindow;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -99,6 +103,37 @@ public class CardActor extends Table {
         setHighlighted(false);
       }
     });
+
+    // 👇 Добавляем обработчик клика
+    this.addListener(new ClickListener() {
+      private long lastDownTime = 0;
+      private boolean dragged = false;
+
+      @Override
+      public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
+        lastDownTime = System.currentTimeMillis();
+        dragged = false;
+        return super.touchDown(event, x, y, pointer, button);
+      }
+
+      @Override
+      public void touchDragged(InputEvent event, float x, float y, int pointer) {
+        dragged = true;
+        super.touchDragged(event, x, y, pointer);
+      }
+
+      @Override
+      public void touchUp(InputEvent event, float x, float y, int pointer, int button) {
+        long now = System.currentTimeMillis();
+        // Быстрый клик (меньше 200 мс, без перетаскивания)
+        if (!dragged && (now - lastDownTime < 200)) {
+          CardInfoWindow infoWindow = new CardInfoWindow(card, skin);
+          getStage().addActor(infoWindow.fadeIn()); // плавное появление
+        }
+        super.touchUp(event, x, y, pointer, button);
+      }
+    });
+
   }
 
   public void setHighlighted(boolean highlighted) {

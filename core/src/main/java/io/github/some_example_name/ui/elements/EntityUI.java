@@ -4,13 +4,16 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 import io.github.some_example_name.model.CombatEntity;
 import io.github.some_example_name.model.Entity;
 import io.github.some_example_name.ui.effects.BuffEffectUI;
 import io.github.some_example_name.ui.panels.BoardUI;
+import io.github.some_example_name.ui.windows.EntityInfoWindow;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +50,7 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
     idleAnimation = loadAnimation(spriteFolder, "idle", 0.2f, Animation.PlayMode.LOOP);
     attackAnimation = loadAnimation(spriteFolder, "attack", 0.2f, Animation.PlayMode.LOOP);
     deadAnimation = loadAnimation(spriteFolder, "dead", 0.1f, Animation.PlayMode.NORMAL);
-    magicAnimation = loadAnimation(spriteFolder, "magic", 0.2f, Animation.PlayMode.LOOP);
+    magicAnimation = loadAnimation(spriteFolder, "magic", 0.1f, Animation.PlayMode.LOOP);
     currentAnimation = idleAnimation;
 
     TextureRegion firstFrame = idleAnimation != null ? idleAnimation.getKeyFrame(0) : null;
@@ -61,6 +64,22 @@ public abstract class EntityUI<T extends CombatEntity> extends Table {
     this.add(paramLabel).padTop(2).row();
     this.add(entityImage).size(spriteWidth, spriteHeight).row();
     // this.add(nameLabel).padTop(2).row();
+
+    // Добавляем слушатель клика по юниту
+    this.addListener(new ClickListener() {
+      @Override
+      public void clicked(InputEvent event, float x, float y) {
+        if (getStage() != null && skin != null) {
+          EntityInfoWindow infoWindow = new EntityInfoWindow(entity, skin);
+          getStage().addActor(infoWindow);
+
+          // Центрирование после добавления на stage
+          infoWindow.setPosition(
+              (getStage().getWidth() - infoWindow.getWidth()) / 2f,
+              (getStage().getHeight() - infoWindow.getHeight()) / 2f);
+        }
+      }
+    });
 
   }
 

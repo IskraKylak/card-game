@@ -30,7 +30,6 @@ public abstract class Entity implements Targetable {
 
   // --- эффекты ---
   public void addStatusEffect(StatusEffect effect) {
-    effect.onApply(this);
     activeEffects.add(effect);
   }
 
