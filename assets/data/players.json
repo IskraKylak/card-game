@@ -1,21 +1,6 @@
 [
   { "id": 1, "name": "Light", "health": 20, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "LIFE",
-    "activeEffects": [
-      { 
-        "type": "RegenEffect", 
-        "amount": 1, 
-        "duration": 3, 
-        "targetingRule": "SELF", 
-        "targetCount": 1 
-      },
-      { 
-        "type": "AttackBuffEffect", 
-        "amount": 1, 
-        "duration": 3, 
-        "targetingRule": "SELF", 
-        "targetCount": 1 
-      }
-    ] },
+    "activeEffects": [] },
   { "id": 2, "name": "Death", "health": 18, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "DEATH",
     "activeEffects": [] },
   { "id": 3, "name": "Order", "health": 22, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "ORDER",

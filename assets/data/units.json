@@ -28,8 +28,8 @@
     "maxActionsPerTurn": 1,
     "activeEffects": [
       { 
-        "type": "AttackBuffEffect", 
-        "amount": 1, 
+        "type": "RegenEffect", 
+        "amount": 3,
         "duration": 999999, 
         "targetingRule": "SELF", 
         "targetCount": 1 

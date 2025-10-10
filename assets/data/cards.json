@@ -73,6 +73,46 @@
     "countTarget": 2
   },
   {
+    "id": 20,
+    "name": "AttackPower",
+    "description": "Даёт юниту +2 к атаке",
+    "cost": 3,
+    "type": "BUFF",
+    "faction": "LIFE",
+    "effect": [
+      {
+        "type": "BuffEffect",
+        "status": "AttackBuffEffect",
+        "value": 2,
+        "duration": 0,
+        "targetingRule": 1
+      }
+    ],
+    "image": "game/card-attackPower.png",
+    "isBurnOnPlay": false,
+    "countTarget": 1
+  },
+  {
+    "id": 20,
+    "name": "RegenEffect",
+    "description": "Даёт юниту +3 к здоровью",
+    "cost": 3,
+    "type": "BUFF",
+    "faction": "LIFE",
+    "effect": [
+      {
+        "type": "BuffEffect",
+        "status": "RegenEffect",
+        "value": 3,
+        "duration": 3,
+        "targetingRule": 1
+      }
+    ],
+    "image": "game/card-attackPower.png",
+    "isBurnOnPlay": false,
+    "countTarget": 2
+  },
+  {
     "id": 11,
     "name": "Poison",
     "description": "Отравляет врага",
