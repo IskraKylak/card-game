@@ -7,12 +7,20 @@ public abstract class AbstractStatusEffect implements StatusEffect {
   protected int duration;
   protected final StatusType type;
   protected TargetingRule targetingRule;
+  protected int targetCount;
 
-  protected AbstractStatusEffect(String name, int duration, StatusType type, TargetingRule targetingRule) {
+  protected AbstractStatusEffect(String name, int duration, StatusType type, TargetingRule targetingRule,
+      int targetCount) {
     this.name = name;
     this.duration = duration;
     this.type = type;
     this.targetingRule = targetingRule;
+    this.targetCount = targetCount;
+  }
+
+  @Override
+  public int getTargetCount() {
+    return targetCount;
   }
 
   @Override

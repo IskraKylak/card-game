@@ -7,8 +7,8 @@ public class AttackBuffEffect extends AbstractStatusEffect {
   private final int bonusAttack;
   private final int initialDuration;
 
-  public AttackBuffEffect(int duration, int amount, TargetingRule targetingRule) {
-    super("Attack Buff", duration, StatusType.BUFF, targetingRule); // ← указываем, что это бафф
+  public AttackBuffEffect(int duration, int amount, TargetingRule targetingRule, int targetCount) {
+    super("Attack Buff", duration, StatusType.BUFF, targetingRule, targetCount); // ← указываем, что это бафф
     this.bonusAttack = amount;
     this.initialDuration = duration;
   }
@@ -38,6 +38,6 @@ public class AttackBuffEffect extends AbstractStatusEffect {
 
   @Override
   public AttackBuffEffect copy() {
-    return new AttackBuffEffect(this.initialDuration, this.bonusAttack, getTargetingRule());
+    return new AttackBuffEffect(this.initialDuration, this.bonusAttack, getTargetingRule(), getTargetCount());
   }
 }

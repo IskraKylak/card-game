@@ -6,6 +6,7 @@ import java.util.List;
 import io.github.some_example_name.model.Player;
 import io.github.some_example_name.model.Slot;
 import io.github.some_example_name.model.Unit;
+import io.github.some_example_name.model.Board;
 import io.github.some_example_name.model.Enemy;
 
 public class GameContext {

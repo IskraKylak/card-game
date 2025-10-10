@@ -71,14 +71,20 @@ public class EnemyLoader {
         : o.has("damagePerTurn") ? o.get("damagePerTurn").getAsInt()
             : o.has("damage") ? o.get("damage").getAsInt()
                 : 1;
+    int targetCount = o.has("targetCount") ? o.get("targetCount").getAsInt() : 1;
+
     TargetingRule tr = parseTargetingRule(o);
 
     try {
       // Собираем полное имя класса
       String className = "io.github.some_example_name.model.status." + type;
       Class<?> clazz = Class.forName(className);
-      return (StatusEffect) clazz.getConstructor(int.class, int.class, TargetingRule.class)
-          .newInstance(duration, amount, tr);
+
+      // используем новый конструктор с targetCount
+      return (StatusEffect) clazz
+          .getConstructor(int.class, int.class, TargetingRule.class, int.class)
+          .newInstance(duration, amount, tr, targetCount);
+
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Не удалось создать эффект: " + type);

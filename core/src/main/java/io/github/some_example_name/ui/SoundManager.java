@@ -11,7 +11,7 @@ public class SoundManager {
   public static void load() {
     sounds.put("spell", Gdx.audio.newSound(Gdx.files.internal("music/defolt-effect/magic.mp3")));
     sounds.put("attack", Gdx.audio.newSound(Gdx.files.internal("music/defolt-effect/attack.mp3")));
-    sounds.put("cart-play", Gdx.audio.newSound(Gdx.files.internal("music/defolt-effect/cart-play.mp3")));
+    sounds.put("card-play", Gdx.audio.newSound(Gdx.files.internal("music/defolt-effect/cart-play.mp3")));
     sounds.put("buff", Gdx.audio.newSound(Gdx.files.internal("music/defolt-effect/buff.mp3")));
     sounds.put("debuff", Gdx.audio.newSound(Gdx.files.internal("music/defolt-effect/debuff.mp3")));
     // sounds.put("death",

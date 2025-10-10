@@ -76,122 +76,100 @@ public abstract class CombatEntity extends Entity {
       List<Targetable> alliedTargets,
       List<Targetable> enemyTargets,
       Random rnd) {
-    Targetable target = chooseSpellTarget(spell, player, enemy, alliedTargets, enemyTargets, rnd);
-    actionPlan.addAction(new ActionPlan.Action(ActionPlan.ActionType.CAST_SPELL, target, 0, spell));
+    List<Targetable> chosenTargets = chooseSpellTargets(spell, player, enemy, alliedTargets, enemyTargets, rnd);
+
+    for (Targetable target : chosenTargets) {
+      actionPlan.addAction(new ActionPlan.Action(
+          ActionPlan.ActionType.CAST_SPELL,
+          target,
+          0,
+          spell));
+    }
   }
 
   /**
    * Новый метод выбора цели для заклинаний.
    * Работает корректно для юнитов и врагов (в том числе если враг один).
    */
-  private Targetable chooseSpellTarget(StatusEffect spell,
+  private List<Targetable> chooseSpellTargets(StatusEffect spell,
       Player player,
       Enemy enemy,
       List<Targetable> alliedTargets,
       List<Targetable> enemyTargets,
       Random rnd) {
+    List<Targetable> chosenTargets = new ArrayList<>();
+    if (spell == null)
+      return chosenTargets;
 
-    TargetingRule rule = TargetingRule.NONE;
-    if (spell != null) {
-      rule = spell.getTargetingRule();
-    }
+    TargetingRule rule = spell.getTargetingRule();
+    int count = spell.getTargetCount();
 
     boolean isEnemyCaster = this instanceof Enemy;
     boolean isUnitCaster = this instanceof Unit;
 
-    System.out.println("🎯 CHOOSE SPELL TARGET");
-    System.out
-        .println("Кастер: " + getName() + " (" + (isEnemyCaster ? "ENEMY" : isUnitCaster ? "UNIT" : "OTHER") + ")");
-    System.out.println("Правило таргетинга: " + rule);
-    System.out.println("Allied targets: " + alliedTargets.size() + ", Enemy targets: " + enemyTargets.size());
-
-    Targetable chosenTarget;
+    // Определяем возможные цели в зависимости от правила таргетинга
+    List<Targetable> possibleTargets = new ArrayList<>();
 
     switch (rule) {
-      case SELF -> {
-        chosenTarget = this;
-        System.out.println("Выбран SELF: " + ((Entity) chosenTarget).getName());
-      }
-      case PLAYER -> {
-        chosenTarget = player;
-        System.out.println("Выбран PLAYER: " + player.getName());
-      }
+      case SELF -> possibleTargets.add(this);
+
+      case PLAYER -> possibleTargets.add(player);
+
       case ENEMY -> {
         if (isUnitCaster) {
-          if (!enemyTargets.isEmpty()) {
-            chosenTarget = enemyTargets.get(rnd.nextInt(enemyTargets.size()));
-            System.out.println("Юнит выбирает ENEMY: " + ((Entity) chosenTarget).getName());
-          } else {
-            chosenTarget = enemy;
-            System.out.println("Fallback на ENEMY: " + enemy.getName());
-          }
+          possibleTargets.addAll(enemyTargets.isEmpty() ? List.of(enemy) : enemyTargets);
         } else {
-          if (!enemyTargets.isEmpty()) {
-            chosenTarget = enemyTargets.get(rnd.nextInt(enemyTargets.size()));
-            System.out.println("Враг выбирает ENEMY: " + ((Entity) chosenTarget).getName());
-          } else {
-            chosenTarget = player;
-            System.out.println("Fallback на PLAYER: " + player.getName());
-          }
+          possibleTargets.addAll(enemyTargets.isEmpty() ? List.of(player) : enemyTargets);
         }
-      }
-      case ALLY -> {
-        if (isUnitCaster) {
-          if (!alliedTargets.isEmpty()) {
-            chosenTarget = alliedTargets.get(rnd.nextInt(alliedTargets.size()));
-            System.out.println("Юнит выбирает ALLY: " + ((Entity) chosenTarget).getName());
-          } else {
-            chosenTarget = this;
-            System.out.println("Fallback на SELF: " + getName());
-          }
-        } else {
-          chosenTarget = this;
-          System.out.println("Враг выбирает ALLY (только SELF): " + getName());
-        }
-      }
-      case ALL_ALLY -> {
-        if (isUnitCaster) {
-          List<Targetable> possibleTargets = new ArrayList<>(alliedTargets);
-          possibleTargets.add(this);
-          possibleTargets.add(player);
-          chosenTarget = possibleTargets.get(rnd.nextInt(possibleTargets.size()));
-          System.out.println("Юнит выбирает ALL_ALLY: " + ((Entity) chosenTarget).getName());
-        } else {
-          chosenTarget = this;
-          System.out.println("Враг выбирает ALL_ALLY (только SELF): " + getName());
-        }
-      }
-      case RANDOM_ALLY -> {
-        if (!alliedTargets.isEmpty()) {
-          chosenTarget = alliedTargets.get(rnd.nextInt(alliedTargets.size()));
-          System.out.println("Выбран RANDOM_ALLY: " + ((Entity) chosenTarget).getName());
-        } else {
-          chosenTarget = this;
-          System.out.println("Fallback на SELF: " + getName());
-        }
-      }
-      case RANDOM_ENEMY -> {
-        if (!enemyTargets.isEmpty()) {
-          chosenTarget = enemyTargets.get(rnd.nextInt(enemyTargets.size()));
-          System.out.println("Выбран RANDOM_ENEMY: " + ((Entity) chosenTarget).getName());
-        } else {
-          chosenTarget = isEnemyCaster ? player : enemy;
-          System.out.println(
-              "Fallback на " + (isEnemyCaster ? "PLAYER" : "ENEMY") + ": " + ((Entity) chosenTarget).getName());
-        }
-      }
-      case NONE -> {
-        chosenTarget = player;
-        System.out.println("DEFAULT: SELF " + getName());
       }
 
-      default -> {
-        chosenTarget = player;
-        System.out.println("DEFAULT: SELF " + getName());
+      case RANDOM_ALLY -> {
+        if (isUnitCaster)
+          possibleTargets.addAll(alliedTargets.isEmpty() ? List.of(this) : alliedTargets);
+        else
+          possibleTargets.add(this);
+      }
+
+      case RANDOM_ALLY_OR_PLAYER -> {
+        if (isUnitCaster) {
+          possibleTargets.addAll(alliedTargets);
+          possibleTargets.add(this);
+          possibleTargets.add(player);
+        } else
+          possibleTargets.add(this);
+      }
+
+      case ALL_ALLY -> {
+        if (isUnitCaster) {
+          possibleTargets.addAll(alliedTargets);
+          possibleTargets.add(this);
+          possibleTargets.add(player);
+        } else
+          possibleTargets.add(this);
+      }
+
+      case NONE -> possibleTargets.add(player);
+      default -> possibleTargets.add(player);
+    }
+
+    // Ограничиваем количество целей targetCount и выбираем случайные если нужно
+    if (possibleTargets.size() <= count) {
+      chosenTargets.addAll(possibleTargets);
+    } else {
+      // Случайные уникальные цели
+      List<Targetable> copy = new ArrayList<>(possibleTargets);
+      for (int i = 0; i < count; i++) {
+        int idx = rnd.nextInt(copy.size());
+        chosenTargets.add(copy.get(idx));
+        copy.remove(idx);
       }
     }
 
-    return chosenTarget;
+    // Для дебага
+    System.out.println("Выбраны цели для " + spell.getName() + ": " +
+        chosenTargets.stream().map(t -> ((Entity) t).getName()).toList());
+
+    return chosenTargets;
   }
 
   // Выбор цели для обычной атаки

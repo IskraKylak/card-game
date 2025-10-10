@@ -30,13 +30,15 @@
         "type": "PoisonEffect",
         "duration": 3,
         "amount": 3,
-        "targetingRule": "ENEMY"
+        "targetingRule": "ENEMY",
+        "targetCount": 2
       },
       {
         "type": "AttackBuffEffect",
         "duration": 1,
         "amount": 2,
-        "targetingRule": "SELF" 
+        "targetingRule": "SELF",
+        "targetCount": 1
       }
     ]
   }

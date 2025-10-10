@@ -74,14 +74,16 @@ public class UnitLoader {
         : o.has("damage") ? o.get("damage").getAsInt()
             : o.has("bonus") ? o.get("bonus").getAsInt()
                 : 1;
+    int targetCount = o.has("targetCount") ? o.get("targetCount").getAsInt() : 1;
+
     TargetingRule tr = parseTargetingRule(o);
 
     try {
-      // Пытаемся создать класс через рефлексию по имени
       String className = "io.github.some_example_name.model.status." + type;
       Class<?> clazz = Class.forName(className);
-      Constructor<?> ctor = clazz.getConstructor(int.class, int.class, TargetingRule.class);
-      return (StatusEffect) ctor.newInstance(duration, amount, tr);
+      return (StatusEffect) clazz
+          .getConstructor(int.class, int.class, TargetingRule.class, int.class)
+          .newInstance(duration, amount, tr, targetCount);
     } catch (Exception e) {
       System.out.println("Не удалось создать заклинание: " + type + " — " + e.getMessage());
       return null;

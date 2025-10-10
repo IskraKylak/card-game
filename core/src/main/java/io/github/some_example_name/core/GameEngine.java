@@ -1,6 +1,7 @@
 package io.github.some_example_name.core;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import io.github.some_example_name.model.*;
@@ -61,68 +62,84 @@ public class GameEngine {
       return false;
     }
 
-    boolean validTarget;
-    switch (card.getType()) {
-      case UNIT:
-        validTarget = target instanceof Slot;
-        break;
-      case ATTACK:
-        validTarget = target instanceof Enemy || target instanceof Player;
-        break;
-      case BUFF:
-        validTarget = target instanceof Unit;
-        break;
-      case DEBUFF:
-        validTarget = target instanceof Enemy;
-        break;
-      default:
-        validTarget = false;
-    }
+    int count = card.getCountTarget();
+    boolean applied = false;
 
-    if (!validTarget) {
-      System.out.println("Карта " + card.getName() + " не может быть применена на эту цель.");
-      return false;
-    }
+    // Если countTarget == 0, проверяем конкретную цель
+    if (count == 0) {
+      boolean validTarget;
+      switch (card.getType()) {
+        case UNIT -> validTarget = target instanceof Slot;
+        case ATTACK -> validTarget = target instanceof Enemy || target instanceof Player;
+        case BUFF -> validTarget = target instanceof Unit;
+        case DEBUFF -> validTarget = target instanceof Enemy;
+        default -> validTarget = false;
+      }
 
-    boolean applied = card.getEffect().apply(context, target);
+      if (!validTarget) {
+        System.out.println("Карта " + card.getName() + " не может быть применена на эту цель.");
+        return false;
+      }
+
+      applied = card.getEffect().apply(context, target);
+    } else {
+      // countTarget > 0 — Engine сам выбирает случайные цели
+      List<Targetable> possibleTargets = new ArrayList<>();
+
+      switch (card.getType()) {
+        case ATTACK -> {
+          possibleTargets.addAll(player.getSlots().stream()
+              .map(Slot::getUnit)
+              .filter(u -> u != null)
+              .map(u -> (Targetable) u)
+              .toList());
+          possibleTargets.add((Targetable) context.getEnemy());
+          possibleTargets.add((Targetable) player); // включаем игрока как цель атаки
+        }
+        case BUFF -> possibleTargets.addAll(player.getSlots().stream()
+            .map(Slot::getUnit)
+            .filter(u -> u != null)
+            .map(u -> (Targetable) u)
+            .toList());
+        case DEBUFF -> possibleTargets.add((Targetable) context.getEnemy());
+        case UNIT -> possibleTargets.addAll(player.getSlots().stream()
+            .filter(s -> !s.isOccupied())
+            .toList());
+      }
+
+      if (possibleTargets.isEmpty()) {
+        System.out.println("Нет доступных целей для карты: " + card.getName());
+        return false;
+      }
+
+      Random rnd = new Random();
+      List<Targetable> copy = new ArrayList<>(possibleTargets);
+
+      for (int i = 0; i < count && !copy.isEmpty(); i++) {
+        int idx = rnd.nextInt(copy.size());
+        Targetable t = copy.remove(idx);
+        boolean result = card.getEffect().apply(context, t);
+        applied = applied || result;
+      }
+    }
 
     if (applied) {
       player.setMana(player.getMana() - card.getCost());
 
-      // 🔥 Проверка: карта сгорает после розыгрыша?
       if (card.isBurnOnPlay()) {
         System.out.println("🔥 Карта " + card.getName() + " сгорает после розыгрыша!");
-
-        // Удаляем карту полностью из игры
         player.getHand().remove(card);
         player.getBattleDeck().remove(card);
         player.getDiscard().remove(card);
-        // при желании можно добавить player.getRemovedFromGame().add(card);
       } else {
-        // Обычное поведение — карта уходит в сброс
         player.playCard(card);
       }
+
       context.getEventBus().emit(BattleEvent.of(BattleEventType.CARD_PLAYED, card));
-
     }
 
-    checkBattleState(); // проверяем, не закончился ли бой
+    checkBattleState();
     return applied;
-  }
-
-  // -------------------- УДАЛЕНИЕ МЕРТВЫХ ЮНИТОВ --------------------
-  private void removeDeadUnits() {
-    Player player = context.getPlayer();
-    Enemy enemy = context.getEnemy();
-
-    for (Slot slot : player.getSlots()) {
-      Unit u = slot.getUnit();
-      if (u != null && !u.isAlive()) {
-        slot.removeUnit();
-      }
-    }
-
-    // Для врага можно добавить аналогично, если будет список юнитов
   }
 
   // -------------------- ПОИСК СЛОТА ПО ЮНИТУ --------------------
@@ -181,10 +198,10 @@ public class GameEngine {
     processPlayerUnits(player, turnProcessor, enemy);
     processEnemy(enemy, turnProcessor, player);
 
+    startPlayerTurn(turnProcessor);
+
     // 🚀 Старт очереди
     turnProcessor.runNext();
-
-    startPlayerTurn();
   }
 
   // ------------------------ ЮНИТ --------------------
@@ -490,40 +507,61 @@ public class GameEngine {
     Player player = context.getPlayer();
     Enemy enemy = context.getEnemy();
     if (player.getHealth() <= 0) {
-      context.getEventBus().emit(BattleEvent.of(BattleEventType.RESTART, null));
+      context.getEventBus().emit(BattleEvent.of(BattleEventType.RESTART, "Enemy"));
       return "Враг";
     }
 
     if (enemy.getHealth() <= 0) {
-      context.getEventBus().emit(BattleEvent.of(BattleEventType.RESTART, null));
+      context.getEventBus().emit(BattleEvent.of(BattleEventType.RESTART, "Player"));
       return "Игрок";
     }
+
+    context.getEventBus().emit(BattleEvent.of(BattleEventType.RESTART, "Draw"));
     return "Ничья";
   }
 
-  public void startPlayerTurn() {
+  public void startPlayerTurn(TurnProcessor turnProcessor) {
     System.out.println("-------------ХОД ИГРОКА-------------");
     Player player = context.getPlayer();
     Enemy enemy = context.getEnemy();
 
-    // 🔹 Обработка эффектов на игроке
-    for (StatusEffect effect : new ArrayList<>(player.getStatusEffects())) {
-      effect.onTurnStart(player); // применяем эффект (урон, лечение и т.д.)
-      if (!effect.tick(player)) { // уменьшаем duration и убираем, если закончилось
-        player.removeStatusEffect(effect);
-      }
+    ArrayList<StatusEffect> effects = new ArrayList<>(player.getStatusEffects());
+
+    if (effects.isEmpty()) {
+      // 🔸 Нету эффектов — просто сразу продолжаем ход
+      System.out.println("На игроке нет активных эффектов");
+      processPlayerTurnWithoutEffects(turnProcessor, player, enemy);
+      return;
     }
 
-    if (!player.isAlive()) {
-      getWinner();
-      return; // Пропускаем действия мёртвого игрока
-    }
+    // 🔹 Есть эффекты — обрабатываем каждый
+    for (StatusEffect effect : effects) {
+      effect.onTurnStart(player);
 
-    // 1️⃣ Обновление карт, маны и эффектов
+      turnProcessor.addAction(() -> {
+        context.getEventBus().emit(BattleEvent.of(
+            BattleEventType.STATUS_EFFECT_TRIGGERED,
+            new StatusEffectPayload(player, effect, () -> {
+
+              if (!effect.tick(player)) {
+                effect.onRemove(player);
+                player.removeStatusEffect(effect);
+              }
+
+              if (checkBattleState())
+                return;
+
+              processPlayerTurnWithoutEffects(turnProcessor, player, enemy);
+              turnProcessor.runNext();
+            })));
+      });
+    }
+  }
+
+  private void processPlayerTurnWithoutEffects(TurnProcessor turnProcessor, Player player, Enemy enemy) {
     player.restoreMana(player.getMaxMana());
     drawCards(player.getStartingHandSize());
 
-    // 2️⃣ Планируем действия юнитов игрока
     for (Slot slot : player.getSlots()) {
       Unit unit = slot.getUnit();
       if (unit != null) {
@@ -534,7 +572,6 @@ public class GameEngine {
       }
     }
 
-    // 3️⃣ Планируем действия врага
     enemy.planActions(player, enemy);
   }
 

@@ -10,6 +10,6 @@ public enum TargetingRule {
   ALLY, // На союзного юнита
   ENEMY, // На врага
   RANDOM_ALLY, // Случайный союзник
-  RANDOM_ENEMY, // Случайный враг
+  RANDOM_ALLY_OR_PLAYER,
   ALL_ALLY
 }

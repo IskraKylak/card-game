@@ -11,6 +11,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -33,6 +34,7 @@ import io.github.some_example_name.ui.effects.BuffEffectUI;
 import io.github.some_example_name.ui.effects.DeBuffEffectUI;
 import io.github.some_example_name.ui.elements.*;
 import io.github.some_example_name.ui.panels.*;
+import io.github.some_example_name.ui.windows.BattleResultWindow;
 
 import java.util.ArrayList;
 
@@ -44,6 +46,7 @@ public class BattleScreenUI extends ScreenAdapter {
   private final StatusPanelUI statusPanelUI;
   private final GameContext context;
   private final GameEngine engine;
+  private final Skin skin;
 
   private final float WORLD_WIDTH = 1280f;
   private final float WORLD_HEIGHT = 720f;
@@ -53,6 +56,7 @@ public class BattleScreenUI extends ScreenAdapter {
 
     this.context = context;
     this.engine = engine;
+    this.skin = skin;
 
     context.getPlayer().initBattle();
 
@@ -151,36 +155,29 @@ public class BattleScreenUI extends ScreenAdapter {
     });
 
     context.getEventBus().on(BattleEventType.RESTART, event -> {
-      boardUI.refresh();
+      String winner = (String) event.getPayload(); // получаем информацию о победителе
 
-      Skin newSkin = new Skin(Gdx.files.internal("uiskin.json"));
-      TextButton restartButton = new TextButton("Restart Game", newSkin);
-      restartButton.setPosition(
-          stage.getWidth() / 2f - restartButton.getWidth() / 2f,
-          stage.getHeight() / 2f - restartButton.getHeight() / 2f);
+      BattleResultWindow resultWindow = new BattleResultWindow(winner, skin, () -> {
+        // Логика рестарта игры
+        Player newPlayer = DataPlayers.getPlayerByFaction(Faction.LIFE);
+        newPlayer.buildDefaultDeckFromFaction();
+        newPlayer.buildBattleDeck();
+        newPlayer.initBattle();
 
-      restartButton.addListener(new ChangeListener() {
-        @Override
-        public void changed(ChangeEvent event, Actor actor) {
-          restartButton.remove();
+        Enemy newEnemy = DataEnemy.getEnemyById(3);
 
-          Player newPlayer = DataPlayers.getPlayerByFaction(Faction.LIFE);
-          newPlayer.buildDefaultDeckFromFaction();
-          newPlayer.buildBattleDeck();
-          newPlayer.initBattle();
+        GameContext newContext = new GameContext(newPlayer, newEnemy);
+        GameEngine newEngine = new GameEngine(newContext);
 
-          Enemy newEnemy = DataEnemy.getEnemyById(3);
-
-          GameContext newContext = new GameContext(newPlayer, newEnemy);
-          GameEngine newEngine = new GameEngine(newContext);
-
-          Skin newSkin = new Skin(Gdx.files.internal("uiskin.json"));
-          BattleScreenUI newScreen = new BattleScreenUI(newContext, newEngine, newSkin);
-          ((Game) Gdx.app.getApplicationListener()).setScreen(newScreen);
-        }
+        BattleScreenUI newScreen = new BattleScreenUI(newContext, newEngine, skin);
+        ((Game) Gdx.app.getApplicationListener()).setScreen(newScreen);
       });
 
-      stage.addActor(restartButton);
+      stage.addActor(resultWindow);
+
+      resultWindow.setPosition(
+          (stage.getWidth() - resultWindow.getWidth()) / 2f,
+          (stage.getHeight() - resultWindow.getHeight()) / 2f);
     });
 
     // 🔹 Юнит или враг атакует
@@ -302,29 +299,47 @@ public class BattleScreenUI extends ScreenAdapter {
       StatusEffect effect = payload.getEffect();
       Runnable onComplete = payload.getOnComplete();
 
-      EntityUI<?> targetUI = boardUI.findEntityUI(target);
-      if (targetUI == null) {
-        onComplete.run();
-        return;
-      }
+      boolean isPlayerTarget = target == boardUI.getPlayerUI().getPlayer(); // проверка — это игрок?
 
       boolean isDebuff = effect.isNegative();
-
-      // Эффект будет добавляться внутрь самой модельки
       Actor effectActor;
-      float centerX = targetUI.getWidth() / 2f; // теперь локальные координаты внутри Table
-      float centerY = targetUI.getHeight() * 0.35f;
 
-      if (isDebuff) {
-        SoundManager.play("debuff");
-        effectActor = new DeBuffEffectUI(centerX, centerY, onComplete);
+      System.out.println("Статус эффект применён: " + effect.getName() + " к " + target.getName());
+
+      System.out.println("isPlayerTarget: " + isPlayerTarget);
+
+      if (isPlayerTarget) {
+        // 🎯 Эффект на игроке
+        PlayerUI playerUI = boardUI.getPlayerUI();
+
+        float centerX = playerUI.getWidth() / 2f;
+        float centerY = playerUI.getHeight() * 0.35f;
+
+        SoundManager.play(isDebuff ? "debuff" : "buff");
+        effectActor = isDebuff
+            ? new DeBuffEffectUI(centerX, centerY, onComplete)
+            : new BuffEffectUI(centerX, centerY, onComplete);
+
+        playerUI.addActor(effectActor);
       } else {
-        SoundManager.play("buff");
-        effectActor = new BuffEffectUI(centerX, centerY, onComplete);
+        // 🎯 Эффект на других сущностях
+        EntityUI<?> targetUI = boardUI.findEntityUI(target);
+        if (targetUI == null) {
+          onComplete.run();
+          return;
+        }
+
+        float centerX = targetUI.getWidth() / 2f;
+        float centerY = targetUI.getHeight() * 0.35f;
+
+        SoundManager.play(isDebuff ? "debuff" : "buff");
+        effectActor = isDebuff
+            ? new DeBuffEffectUI(centerX, centerY, onComplete)
+            : new BuffEffectUI(centerX, centerY, onComplete);
+
+        targetUI.addActor(effectActor);
       }
 
-      // Добавляем внутрь самой UI-модельки, а не на сцену
-      targetUI.addActor(effectActor);
       boardUI.refresh();
     });
 
@@ -364,6 +379,7 @@ public class BattleScreenUI extends ScreenAdapter {
   // ===================== КОНЕЦ ХОДА =====================
   private void handleEndTurn() {
     statusPanelUI.getEndTurnButton().setDisabled(true);
+    statusPanelUI.getEndTurnButton().setTouchable(Touchable.disabled);
 
     // Логика сама обрабатывает статус-эффекты, действия юнитов и врага
     engine.endPlayerTurn(() -> {
@@ -373,6 +389,7 @@ public class BattleScreenUI extends ScreenAdapter {
       } else {
         refreshBattleScreen();
         statusPanelUI.getEndTurnButton().setDisabled(false);
+        statusPanelUI.getEndTurnButton().setTouchable(Touchable.enabled);
       }
     });
   }
@@ -381,16 +398,20 @@ public class BattleScreenUI extends ScreenAdapter {
   public void onCardDropped(CardActor cardActor, float stageX, float stageY) {
     cardActor.setHighlighted(false);
     Card card = cardActor.getCard();
-    Targetable target = boardUI.findTargetAt(stageX, stageY);
 
-    if (target != null) {
-      boolean success = engine.playCardOnTarget(card, target);
-      if (success) {
-        // 🔊 Играем звук успешного розыгрыша карты
-        SoundManager.play("cart-play");
-      } else {
-        cardActor.resetPosition();
-      }
+    boolean success;
+
+    if (card.getCountTarget() > 0) {
+      // Для карт с countTarget > 0 передаем любую заглушку, т.к. Engine сам выберет
+      // рандомные цели
+      success = engine.playCardOnTarget(card, null);
+    } else {
+      Targetable target = boardUI.findTargetAt(stageX, stageY);
+      success = engine.playCardOnTarget(card, target);
+    }
+
+    if (success) {
+      SoundManager.play("card-play");
     } else {
       cardActor.resetPosition();
     }

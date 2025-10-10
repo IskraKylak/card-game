@@ -7,8 +7,8 @@ public class PoisonEffect extends AbstractStatusEffect {
   private final int damagePerTurn;
   private final int initialDuration;
 
-  public PoisonEffect(int duration, int amount, TargetingRule targetingRule) {
-    super("Poison", duration, StatusType.DEBUFF, targetingRule); // ← указываем, что это дебаф
+  public PoisonEffect(int duration, int amount, TargetingRule targetingRule, int targetCount) {
+    super("Poison", duration, StatusType.DEBUFF, targetingRule, targetCount); // ← указываем, что это дебаф
     this.damagePerTurn = amount;
     this.initialDuration = duration;
   }
@@ -27,6 +27,6 @@ public class PoisonEffect extends AbstractStatusEffect {
 
   @Override
   public PoisonEffect copy() {
-    return new PoisonEffect(this.initialDuration, damagePerTurn, getTargetingRule());
+    return new PoisonEffect(this.initialDuration, damagePerTurn, getTargetingRule(), getTargetCount());
   }
 }

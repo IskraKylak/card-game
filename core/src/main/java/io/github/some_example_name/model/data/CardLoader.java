@@ -25,6 +25,7 @@ public class CardLoader {
     EffectJson effect;
     String image;
     boolean isBurnOnPlay;
+    int countTarget;
   }
 
   private static class EffectJson {
@@ -55,7 +56,8 @@ public class CardLoader {
             Faction.valueOf(c.faction),
             effect,
             c.image,
-            c.isBurnOnPlay);
+            c.isBurnOnPlay,
+            c.countTarget);
 
         result.add(card);
       }
@@ -101,10 +103,10 @@ public class CardLoader {
 
       // получаем класс и конструктор
       Class<?> clazz = Class.forName(fullName);
-      Constructor<?> ctor = clazz.getConstructor(int.class, int.class, TargetingRule.class);
+      Constructor<?> ctor = clazz.getConstructor(int.class, int.class, TargetingRule.class, int.class);
 
       // создаём объект
-      return ctor.newInstance(duration, value, TargetingRule.NONE);
+      return ctor.newInstance(duration, value, TargetingRule.NONE, 1);
 
     } catch (Exception e) {
       e.printStackTrace();

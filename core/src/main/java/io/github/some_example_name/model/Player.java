@@ -117,7 +117,8 @@ public class Player extends Entity {
             hitCard.getFaction(),
             hitCard.getEffect(),
             hitCard.getImagePath(),
-            hitCard.isBurnOnPlay());
+            hitCard.isBurnOnPlay(),
+            hitCard.getCountTarget());
         defaultDeck.add(copy);
       }
     }
@@ -141,7 +142,8 @@ public class Player extends Entity {
           c.getFaction(),
           c.getEffect(),
           c.getImagePath(),
-          c.isBurnOnPlay());
+          c.isBurnOnPlay(),
+          c.getCountTarget());
       defaultDeck.add(copy);
     }
 

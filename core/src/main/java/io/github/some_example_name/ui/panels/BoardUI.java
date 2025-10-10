@@ -187,7 +187,7 @@ public class BoardUI extends Table {
     return playerUI;
   }
 
-  public EntityUI findEntityUI(Entity entity) {
+  public EntityUI<?> findEntityUI(Entity entity) {
     // 1) Проверяем юниты игрока
     for (Actor a : slotsRow.getChildren()) {
       if (a instanceof SlotUI s) {
@@ -202,9 +202,6 @@ public class BoardUI extends Table {
     if (enemyUI != null && enemyUI.getEntity() == entity) {
       return enemyUI;
     }
-
-    // 3) Если добавишь PlayerUI, можно сюда добавить проверку игрока
-    // if (playerUI != null && playerUI.getEntity() == entity) return playerUI;
 
     return null; // ничего не найдено
   }

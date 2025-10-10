@@ -4,5 +4,5 @@ public enum CardType {
   UNIT,
   ATTACK,
   BUFF,
-  DEBUFF
+  DEBUFF,
 }

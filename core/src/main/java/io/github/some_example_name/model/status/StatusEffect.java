@@ -3,6 +3,9 @@ package io.github.some_example_name.model.status;
 import io.github.some_example_name.model.Entity;
 
 public interface StatusEffect {
+
+  int getTargetCount();
+
   /** Имя эффекта (например, "Poison", "Strength Buff") */
   String getName();
 
