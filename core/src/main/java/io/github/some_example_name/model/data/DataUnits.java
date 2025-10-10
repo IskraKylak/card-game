@@ -15,12 +15,20 @@ public class DataUnits {
   private static int nextUnitId = 1000;
 
   static {
-    // загружаем юнитов из JSON
+    // Загружаем юнитов из JSON
     List<Unit> unitsFromJson = UnitLoader.loadUnits(PATH);
     for (Unit u : unitsFromJson) {
       unitTemplates.put(u.getId(),
-          new UnitTemplate(u.getName(), u.getDescription(), u.getHealth(), u.getAttackPower(), u.getSpriteFolder(),
-              u.getMaxActionsPerTurn(), u.getSpells()));
+          new UnitTemplate(
+              u.getName(),
+              u.getDescription(),
+              u.getHealth(),
+              u.getAttackPower(),
+              u.getSpriteFolder(),
+              u.getMaxActionsPerTurn(),
+              u.getSpells(),
+              u.getStatusEffects() // добавили statusEffects
+          ));
     }
   }
 
@@ -30,9 +38,20 @@ public class DataUnits {
     if (template == null)
       throw new IllegalArgumentException("Unknown unit id: " + unitId);
 
-    return new Unit(generateUniqueId(), template.name, template.description, template.health, template.attack,
+    // создаем копии списков, чтобы не делились ссылками между юнитами
+    List<StatusEffect> clonedSpells = StatusEffect.cloneList(template.spells);
+    List<StatusEffect> clonedActiveEffects = StatusEffect.cloneList(template.activeEffects);
+
+    return new Unit(
+        generateUniqueId(),
+        template.name,
+        template.description,
+        template.health,
+        template.attack,
         template.sprite,
-        template.maxActionsPerTurn, template.spells);
+        template.maxActionsPerTurn,
+        clonedSpells,
+        clonedActiveEffects);
   }
 
   private static int generateUniqueId() {
@@ -47,9 +66,10 @@ public class DataUnits {
     final String sprite;
     final int maxActionsPerTurn;
     final List<StatusEffect> spells;
+    final List<StatusEffect> activeEffects;
 
     UnitTemplate(String name, String description, int health, int attack, String sprite, int maxActionsPerTurn,
-        List<StatusEffect> spells) {
+        List<StatusEffect> spells, List<StatusEffect> activeEffects) {
       this.name = name;
       this.description = description;
       this.health = health;
@@ -57,6 +77,7 @@ public class DataUnits {
       this.sprite = sprite;
       this.maxActionsPerTurn = maxActionsPerTurn;
       this.spells = spells;
+      this.activeEffects = activeEffects;
     }
   }
 }

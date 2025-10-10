@@ -36,6 +36,7 @@ public class EnemyLoader {
         String sprite = jo.has("sprite") ? jo.get("sprite").getAsString() : "";
         int maxActions = jo.has("maxActionsPerTurn") ? jo.get("maxActionsPerTurn").getAsInt() : 1;
 
+        // --- spells ---
         List<StatusEffect> spells = new ArrayList<>();
         if (jo.has("spells") && jo.get("spells").isJsonArray()) {
           JsonArray spellsArr = jo.getAsJsonArray("spells");
@@ -48,7 +49,21 @@ public class EnemyLoader {
           }
         }
 
-        enemies.add(new Enemy(id, name, description, health, attack, sprite, maxActions, spells));
+        // --- activeEffects ---
+        List<StatusEffect> activeEffects = new ArrayList<>();
+        if (jo.has("activeEffects") && jo.get("activeEffects").isJsonArray()) {
+          JsonArray effectsArr = jo.getAsJsonArray("activeEffects");
+          for (JsonElement ae : effectsArr) {
+            if (!ae.isJsonObject())
+              continue;
+            StatusEffect effect = deserializeEffect(ae.getAsJsonObject());
+            if (effect != null)
+              activeEffects.add(effect);
+          }
+        }
+
+        // --- создаем Enemy ---
+        enemies.add(new Enemy(id, name, description, health, attack, sprite, maxActions, spells, activeEffects));
       }
 
     } catch (Exception ex) {
@@ -70,17 +85,16 @@ public class EnemyLoader {
     int amount = o.has("amount") ? o.get("amount").getAsInt()
         : o.has("damagePerTurn") ? o.get("damagePerTurn").getAsInt()
             : o.has("damage") ? o.get("damage").getAsInt()
-                : 1;
+                : o.has("bonus") ? o.get("bonus").getAsInt()
+                    : 1;
     int targetCount = o.has("targetCount") ? o.get("targetCount").getAsInt() : 1;
 
     TargetingRule tr = parseTargetingRule(o);
 
     try {
-      // Собираем полное имя класса
       String className = "io.github.some_example_name.model.status." + type;
       Class<?> clazz = Class.forName(className);
 
-      // используем новый конструктор с targetCount
       return (StatusEffect) clazz
           .getConstructor(int.class, int.class, TargetingRule.class, int.class)
           .newInstance(duration, amount, tr, targetCount);

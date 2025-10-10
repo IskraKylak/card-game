@@ -9,8 +9,8 @@ public class Unit extends CombatEntity {
 
   public Unit(int id, String name, String description, int health, int attack, String spriteFolder,
       int maxActionsPerTurn,
-      List<StatusEffect> spells) {
-    super(id, name, description, health, attack, maxActionsPerTurn, spells);
+      List<StatusEffect> spells, List<StatusEffect> activeEffects) {
+    super(id, name, description, health, attack, maxActionsPerTurn, spells, activeEffects);
     this.spriteFolder = spriteFolder;
   }
 

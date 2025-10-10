@@ -1,6 +1,5 @@
 package io.github.some_example_name.model.data;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -10,7 +9,6 @@ import io.github.some_example_name.model.status.StatusEffect;
 import io.github.some_example_name.model.status.TargetingRule;
 
 import java.io.FileReader;
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -39,6 +37,7 @@ public class UnitLoader {
         String sprite = jo.has("sprite") ? jo.get("sprite").getAsString() : "";
         int maxActions = jo.has("maxActionsPerTurn") ? jo.get("maxActionsPerTurn").getAsInt() : 1;
 
+        // --- загружаем spells ---
         List<StatusEffect> spells = new ArrayList<>();
         if (jo.has("spells") && jo.get("spells").isJsonArray()) {
           JsonArray spellsArr = jo.getAsJsonArray("spells");
@@ -51,7 +50,21 @@ public class UnitLoader {
           }
         }
 
-        units.add(new Unit(id, name, description, health, attack, sprite, maxActions, spells));
+        // --- загружаем activeEffects ---
+        List<StatusEffect> activeEffects = new ArrayList<>();
+        if (jo.has("activeEffects") && jo.get("activeEffects").isJsonArray()) {
+          JsonArray effectsArr = jo.getAsJsonArray("activeEffects");
+          for (JsonElement ae : effectsArr) {
+            if (!ae.isJsonObject())
+              continue;
+            StatusEffect effect = deserializeEffect(ae.getAsJsonObject());
+            if (effect != null)
+              activeEffects.add(effect);
+          }
+        }
+
+        // создаем юнит
+        units.add(new Unit(id, name, description, health, attack, sprite, maxActions, spells, activeEffects));
       }
 
     } catch (Exception e) {
@@ -85,7 +98,7 @@ public class UnitLoader {
           .getConstructor(int.class, int.class, TargetingRule.class, int.class)
           .newInstance(duration, amount, tr, targetCount);
     } catch (Exception e) {
-      System.out.println("Не удалось создать заклинание: " + type + " — " + e.getMessage());
+      System.out.println("Не удалось создать эффект: " + type + " — " + e.getMessage());
       return null;
     }
   }

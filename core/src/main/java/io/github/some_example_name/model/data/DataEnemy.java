@@ -13,12 +13,24 @@ public class DataEnemy {
 
   private static final Map<Integer, EnemyTemplate> enemyTemplates = new HashMap<>();
 
+  private static int nextEnemyId = 5000; // уникальные ID для инстансов
+
   static {
+    // Загружаем шаблоны врагов из JSON
     List<Enemy> enemies = EnemyLoader.loadEnemies(PATH);
     for (Enemy e : enemies) {
-      enemyTemplates.put(e.getId(),
-          new EnemyTemplate(e.getName(), e.getDescription(), e.getHealth(), e.getAttackPower(), e.getSpriteFolder(),
-              e.getMaxActionsPerTurn(), e.getSpells()));
+      enemyTemplates.put(
+          e.getId(),
+          new EnemyTemplate(
+              e.getName(),
+              e.getDescription(),
+              e.getHealth(),
+              e.getAttackPower(),
+              e.getSpriteFolder(),
+              e.getMaxActionsPerTurn(),
+              e.getSpells(),
+              e.getStatusEffects() // ← теперь сохраняем активные эффекты
+          ));
     }
   }
 
@@ -28,12 +40,20 @@ public class DataEnemy {
     if (template == null) {
       throw new IllegalArgumentException("Unknown enemy id: " + enemyId);
     }
-    return new Enemy(generateUniqueId(), template.name, template.description, template.health, template.attack,
-        template.sprite,
-        template.maxActionsPerTurn, template.spells);
-  }
 
-  private static int nextEnemyId = 5000; // уникальные ID для инстансов
+    // создаём новые копии списков (чтобы враги не делили одни и те же объекты
+    // эффектов)
+    return new Enemy(
+        generateUniqueId(),
+        template.name,
+        template.description,
+        template.health,
+        template.attack,
+        template.sprite,
+        template.maxActionsPerTurn,
+        StatusEffect.cloneList(template.spells),
+        StatusEffect.cloneList(template.activeEffects));
+  }
 
   private static int generateUniqueId() {
     return nextEnemyId++;
@@ -47,10 +67,11 @@ public class DataEnemy {
     final int attack;
     final String sprite;
     final int maxActionsPerTurn;
-    final List<StatusEffect> spells; // можно добавить позже
+    final List<StatusEffect> spells;
+    final List<StatusEffect> activeEffects;
 
     EnemyTemplate(String name, String description, int health, int attack, String sprite, int maxActionsPerTurn,
-        List<StatusEffect> spells) {
+        List<StatusEffect> spells, List<StatusEffect> activeEffects) {
       this.name = name;
       this.description = description;
       this.health = health;
@@ -58,6 +79,7 @@ public class DataEnemy {
       this.sprite = sprite;
       this.maxActionsPerTurn = maxActionsPerTurn;
       this.spells = spells;
+      this.activeEffects = activeEffects;
     }
   }
 }

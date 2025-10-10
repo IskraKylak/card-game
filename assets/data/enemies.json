@@ -15,7 +15,8 @@
         "amount": 3,
         "targetingRule": "SELF" 
       }
-    ]
+    ],
+    "activeEffects": []
   },
   {
     "id": 3,
@@ -40,6 +41,7 @@
         "targetingRule": "SELF",
         "targetCount": 1
       }
-    ]
+    ],
+    "activeEffects": []
   }
 ]

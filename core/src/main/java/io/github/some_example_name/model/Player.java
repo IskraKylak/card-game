@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import io.github.some_example_name.model.data.DataCards;
+import io.github.some_example_name.model.status.StatusEffect;
 
 public class Player extends Entity {
   private int maxMana;
@@ -22,8 +23,9 @@ public class Player extends Entity {
 
   private List<Slot> slots;
 
-  public Player(int id, String name, int maxHealth, int maxMana, int maxHand, int maxUnits, Faction faction) {
-    super(id, name, maxHealth);
+  public Player(int id, String name, int maxHealth, int maxMana, int maxHand, int maxUnits, Faction faction,
+      List<StatusEffect> activeEffects) {
+    super(id, name, maxHealth, activeEffects);
     this.maxMana = maxMana;
     this.mana = maxMana;
     this.maxHand = maxHand;

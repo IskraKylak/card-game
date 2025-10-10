@@ -10,8 +10,8 @@ public class Enemy extends CombatEntity {
 
   public Enemy(int id, String name, String description, int health, int attackPower, String spriteFolder,
       int maxActionsPerTurn,
-      List<StatusEffect> spells) {
-    super(id, name, description, health, attackPower, maxActionsPerTurn, spells);
+      List<StatusEffect> spells, List<StatusEffect> activeEffects) {
+    super(id, name, description, health, attackPower, maxActionsPerTurn, spells, activeEffects);
     this.spriteFolder = spriteFolder;
   }
 

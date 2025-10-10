@@ -17,11 +17,12 @@ public abstract class Entity implements Targetable {
 
   protected List<StatusEffect> activeEffects = new ArrayList<>();
 
-  protected Entity(int id, String name, int health) {
+  protected Entity(int id, String name, int health, List<StatusEffect> activeEffects) {
     this.name = name;
     this.health = health;
     this.maxHealth = health;
     this.id = id;
+    this.activeEffects = activeEffects;
   }
 
   public int getId() {

@@ -1,6 +1,10 @@
 [
-  { "id": 1, "name": "Light", "health": 20, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "LIFE" },
-  { "id": 2, "name": "Death", "health": 18, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "DEATH" },
-  { "id": 3, "name": "Order", "health": 22, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "ORDER" },
-  { "id": 4, "name": "Chaos", "health": 19, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "CHAOS" }
+  { "id": 1, "name": "Light", "health": 20, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "LIFE",
+    "activeEffects": [] },
+  { "id": 2, "name": "Death", "health": 18, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "DEATH",
+    "activeEffects": [] },
+  { "id": 3, "name": "Order", "health": 22, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "ORDER",
+    "activeEffects": [] },
+  { "id": 4, "name": "Chaos", "health": 19, "maxMana": 3, "maxHand": 4, "maxUnits": 3, "faction": "CHAOS",
+    "activeEffects": [] }
 ]

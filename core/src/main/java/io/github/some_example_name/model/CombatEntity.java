@@ -17,8 +17,8 @@ public abstract class CombatEntity extends Entity {
   protected List<StatusEffect> spells;
 
   protected CombatEntity(int id, String name, String description, int health, int attackPower,
-      int maxActionsPerTurn, List<StatusEffect> spells) {
-    super(id, name, health);
+      int maxActionsPerTurn, List<StatusEffect> spells, List<StatusEffect> activeEffects) {
+    super(id, name, health, activeEffects);
     this.description = description;
     this.attackPower = attackPower;
     this.maxActionsPerTurn = maxActionsPerTurn;
