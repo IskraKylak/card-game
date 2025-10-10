@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import io.github.some_example_name.core.effects.CardEffect;
 import io.github.some_example_name.model.*;
 import io.github.some_example_name.model.payload.StatusEffectPayload;
 import io.github.some_example_name.model.payload.UnitAttackPayload;
@@ -65,7 +66,7 @@ public class GameEngine {
     int count = card.getCountTarget();
     boolean applied = false;
 
-    // Если countTarget == 0, проверяем конкретную цель
+    // --- одиночная цель ---
     if (count == 0) {
       boolean validTarget;
       switch (card.getType()) {
@@ -81,9 +82,14 @@ public class GameEngine {
         return false;
       }
 
-      applied = card.getEffect().apply(context, target);
-    } else {
-      // countTarget > 0 — Engine сам выбирает случайные цели
+      for (CardEffect effect : card.getEffects()) {
+        if (effect.apply(context, target)) {
+          applied = true;
+        }
+      }
+    }
+    // --- множественные цели ---
+    else {
       List<Targetable> possibleTargets = new ArrayList<>();
 
       switch (card.getType()) {
@@ -94,7 +100,7 @@ public class GameEngine {
               .map(u -> (Targetable) u)
               .toList());
           possibleTargets.add((Targetable) context.getEnemy());
-          possibleTargets.add((Targetable) player); // включаем игрока как цель атаки
+          possibleTargets.add((Targetable) player);
         }
         case BUFF -> possibleTargets.addAll(player.getSlots().stream()
             .map(Slot::getUnit)
@@ -107,22 +113,28 @@ public class GameEngine {
             .toList());
       }
 
+      // Если целей нет — считаем карту разыгранной, эффекты не применяются
       if (possibleTargets.isEmpty()) {
-        System.out.println("Нет доступных целей для карты: " + card.getName());
-        return false;
-      }
+        applied = true;
+      } else {
+        Random rnd = new Random();
+        List<Targetable> copy = new ArrayList<>(possibleTargets);
 
-      Random rnd = new Random();
-      List<Targetable> copy = new ArrayList<>(possibleTargets);
-
-      for (int i = 0; i < count && !copy.isEmpty(); i++) {
-        int idx = rnd.nextInt(copy.size());
-        Targetable t = copy.remove(idx);
-        boolean result = card.getEffect().apply(context, t);
-        applied = applied || result;
+        for (int i = 0; i < count && !copy.isEmpty(); i++) {
+          int idx = rnd.nextInt(copy.size());
+          Targetable t = copy.remove(idx);
+          boolean result = false;
+          for (CardEffect effect : card.getEffects()) {
+            if (effect.apply(context, t)) {
+              result = true;
+            }
+          }
+          applied = applied || result;
+        }
       }
     }
 
+    // --- если карта сработала ---
     if (applied) {
       player.setMana(player.getMana() - card.getCost());
 

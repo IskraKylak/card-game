@@ -117,7 +117,7 @@ public class Player extends Entity {
             hitCard.getCost(),
             hitCard.getType(),
             hitCard.getFaction(),
-            hitCard.getEffect(),
+            hitCard.getEffects(),
             hitCard.getImagePath(),
             hitCard.isBurnOnPlay(),
             hitCard.getCountTarget());
@@ -142,7 +142,7 @@ public class Player extends Entity {
           c.getCost(),
           c.getType(),
           c.getFaction(),
-          c.getEffect(),
+          c.getEffects(),
           c.getImagePath(),
           c.isBurnOnPlay(),
           c.getCountTarget());

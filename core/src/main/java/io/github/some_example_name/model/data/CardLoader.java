@@ -5,7 +5,7 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.Gson;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 
 import io.github.some_example_name.core.effects.*;
@@ -22,7 +22,7 @@ public class CardLoader {
     int cost;
     String type;
     String faction;
-    EffectJson effect;
+    JsonElement effect; // теперь может быть объектом или массивом
     String image;
     boolean isBurnOnPlay;
     int countTarget;
@@ -46,7 +46,27 @@ public class CardLoader {
       List<Card> result = new ArrayList<>();
 
       for (CardJson c : data) {
-        CardEffect effect = createEffect(c.effect);
+        List<CardEffect> effects = new ArrayList<>();
+
+        // --- поддержка одиночного эффекта ---
+        if (c.effect != null && c.effect.isJsonObject()) {
+          EffectJson e = gson.fromJson(c.effect, EffectJson.class);
+          CardEffect ce = createEffect(e);
+          if (ce != null)
+            effects.add(ce);
+        }
+
+        // --- поддержка списка эффектов ---
+        else if (c.effect != null && c.effect.isJsonArray()) {
+          JsonArray arr = c.effect.getAsJsonArray();
+          for (JsonElement el : arr) {
+            EffectJson e = gson.fromJson(el, EffectJson.class);
+            CardEffect ce = createEffect(e);
+            if (ce != null)
+              effects.add(ce);
+          }
+        }
+
         Card card = new Card(
             c.id,
             c.name,
@@ -54,13 +74,14 @@ public class CardLoader {
             c.cost,
             CardType.valueOf(c.type),
             Faction.valueOf(c.faction),
-            effect,
+            effects, // <-- список эффектов
             c.image,
             c.isBurnOnPlay,
             c.countTarget);
 
         result.add(card);
       }
+
       return result;
 
     } catch (Exception e) {
@@ -69,7 +90,7 @@ public class CardLoader {
     }
   }
 
-  // 👇 создаёт эффекты динамически
+  // --- Динамическое создание эффектов ---
   private static CardEffect createEffect(EffectJson e) {
     try {
       switch (e.type) {
@@ -95,19 +116,13 @@ public class CardLoader {
     }
   }
 
-  // 👇 создаёт status-эффект по названию класса (из JSON)
+  // --- Создание status-эффекта по названию класса ---
   private static Object createStatus(String className, int value, int duration) {
     try {
-      // полный путь к классу
       String fullName = "io.github.some_example_name.model.status." + className;
-
-      // получаем класс и конструктор
       Class<?> clazz = Class.forName(fullName);
       Constructor<?> ctor = clazz.getConstructor(int.class, int.class, TargetingRule.class, int.class);
-
-      // создаём объект
       return ctor.newInstance(duration, value, TargetingRule.NONE, 1);
-
     } catch (Exception e) {
       e.printStackTrace();
       return null;

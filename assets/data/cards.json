@@ -46,13 +46,28 @@
     "countTarget": 0
   },
   {
-    "id": 10,
-    "name": "Rallying Strike",
-    "description": "Даёт юниту +3 к атаке на 1 хода",
-    "cost": 2,
+    "id": 20,
+    "name": "Blessing of Valor",
+    "description": "Даёт юниту +2 к атаке и восстанавливает 3 здоровья каждый ход в течение 2 ходов.",
+    "cost": 3,
     "type": "BUFF",
     "faction": "LIFE",
-    "effect": { "type": "BuffEffect", "status": "AttackBuffEffect", "value": 2, "duration": 0, "targetingRule": 1 },
+    "effect": [
+      {
+        "type": "BuffEffect",
+        "status": "AttackBuffEffect",
+        "value": 2,
+        "duration": 2,
+        "targetingRule": 1
+      },
+      {
+        "type": "BuffEffect",
+        "status": "RegenEffect",
+        "value": 3,
+        "duration": 2,
+        "targetingRule": 1
+      }
+    ],
     "image": "game/card-attackPower.png",
     "isBurnOnPlay": false,
     "countTarget": 2
@@ -64,7 +79,15 @@
     "cost": 3,
     "type": "DEBUFF",
     "faction": "LIFE",
-    "effect": { "type": "DebuffEffect", "status": "PoisonEffect", "value": 3, "duration": 3, "targetingRule": 1 },
+    "effect": [
+      { 
+        "type": "DebuffEffect", 
+        "status": "PoisonEffect", 
+        "value": 3, 
+        "duration": 3, 
+        "targetingRule": 1 
+      }
+    ],
     "image": "game/card-poison.png",
     "isBurnOnPlay": false,
     "countTarget": 0
