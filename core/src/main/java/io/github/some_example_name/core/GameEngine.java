@@ -242,28 +242,78 @@ public class GameEngine {
 
   // Эффекты юнита
   private void processUnitEffects(Unit unit, TurnProcessor turnProcessor) {
-    for (StatusEffect effect : new ArrayList<>(unit.getStatusEffects())) {
+    List<StatusEffect> allEffects = new ArrayList<>(unit.getStatusEffects());
+
+    // Разделяем на бафы и дебафы
+    List<StatusEffect> buffs = new ArrayList<>();
+    List<StatusEffect> debuffs = new ArrayList<>();
+
+    for (StatusEffect effect : allEffects) {
+      if (effect.isNegative()) {
+        debuffs.add(effect);
+      } else {
+        buffs.add(effect);
+      }
+    }
+
+    // Обработать бафы одной анимацией
+    if (!buffs.isEmpty()) {
+      StatusEffect firstBuff = buffs.get(0);
       turnProcessor.addAction(() -> {
         if (!unit.isAlive()) {
           turnProcessor.runNext();
           return;
         }
-        effect.onTurnStart(unit);
+
+        // Вызываем onTurnStart для всех бафов
+        for (StatusEffect effect : buffs) {
+          effect.onTurnStart(unit);
+        }
 
         context.getEventBus().emit(BattleEvent.of(
             BattleEventType.STATUS_EFFECT_TRIGGERED,
-            new StatusEffectPayload(unit, effect, () -> {
-
-              if (!effect.tick(unit)) {
-                effect.onRemove(unit);
-                unit.removeStatusEffect(effect);
+            new StatusEffectPayload(unit, firstBuff, () -> {
+              // Тикаем и удаляем эффекты по завершению
+              for (StatusEffect effect : buffs) {
+                if (!effect.tick(unit)) {
+                  effect.onRemove(unit);
+                  unit.removeStatusEffect(effect);
+                }
               }
 
-              // Проверяем смерть после эффекта
-              if (checkBattleState())
-                return;
+              if (!checkBattleState()) {
+                turnProcessor.runNext();
+              }
+            })));
+      });
+    }
 
-              turnProcessor.runNext();
+    // Обработать дебафы одной анимацией
+    if (!debuffs.isEmpty()) {
+      StatusEffect firstDebuff = debuffs.get(0);
+      turnProcessor.addAction(() -> {
+        if (!unit.isAlive()) {
+          turnProcessor.runNext();
+          return;
+        }
+
+        for (StatusEffect effect : debuffs) {
+          effect.onTurnStart(unit);
+        }
+
+        context.getEventBus().emit(BattleEvent.of(
+            BattleEventType.STATUS_EFFECT_TRIGGERED,
+            new StatusEffectPayload(unit, firstDebuff, () -> {
+              for (StatusEffect effect : debuffs) {
+                if (!effect.tick(unit)) {
+                  effect.onRemove(unit);
+                  unit.removeStatusEffect(effect);
+                }
+              }
+
+              if (!checkBattleState()) {
+                turnProcessor.runNext();
+              }
             })));
       });
     }
@@ -383,28 +433,75 @@ public class GameEngine {
 
   // Эффекты врага
   private void processEnemyEffects(Enemy enemy, TurnProcessor turnProcessor) {
-    for (StatusEffect effect : new ArrayList<>(enemy.getStatusEffects())) {
+    List<StatusEffect> allEffects = new ArrayList<>(enemy.getStatusEffects());
+
+    List<StatusEffect> buffs = new ArrayList<>();
+    List<StatusEffect> debuffs = new ArrayList<>();
+
+    for (StatusEffect effect : allEffects) {
+      if (effect.isNegative()) {
+        debuffs.add(effect);
+      } else {
+        buffs.add(effect);
+      }
+    }
+
+    // Бафы одной анимацией
+    if (!buffs.isEmpty()) {
+      StatusEffect firstBuff = buffs.get(0);
       turnProcessor.addAction(() -> {
         if (!enemy.isAlive()) {
           turnProcessor.runNext();
           return;
         }
 
-        effect.onTurnStart(enemy);
+        for (StatusEffect effect : buffs) {
+          effect.onTurnStart(enemy);
+        }
 
         context.getEventBus().emit(BattleEvent.of(
             BattleEventType.STATUS_EFFECT_TRIGGERED,
-            new StatusEffectPayload(enemy, effect, () -> {
-
-              if (!effect.tick(enemy)) {
-                effect.onRemove(enemy);
-                enemy.removeStatusEffect(effect);
+            new StatusEffectPayload(enemy, firstBuff, () -> {
+              for (StatusEffect effect : buffs) {
+                if (!effect.tick(enemy)) {
+                  effect.onRemove(enemy);
+                  enemy.removeStatusEffect(effect);
+                }
               }
 
-              if (checkBattleState())
-                return; // останавливаем очередь, если кто-то умер
+              if (!checkBattleState()) {
+                turnProcessor.runNext();
+              }
+            })));
+      });
+    }
 
-              turnProcessor.runNext();
+    // Дебафы одной анимацией
+    if (!debuffs.isEmpty()) {
+      StatusEffect firstDebuff = debuffs.get(0);
+      turnProcessor.addAction(() -> {
+        if (!enemy.isAlive()) {
+          turnProcessor.runNext();
+          return;
+        }
+
+        for (StatusEffect effect : debuffs) {
+          effect.onTurnStart(enemy);
+        }
+
+        context.getEventBus().emit(BattleEvent.of(
+            BattleEventType.STATUS_EFFECT_TRIGGERED,
+            new StatusEffectPayload(enemy, firstDebuff, () -> {
+              for (StatusEffect effect : debuffs) {
+                if (!effect.tick(enemy)) {
+                  effect.onRemove(enemy);
+                  enemy.removeStatusEffect(effect);
+                }
+              }
+
+              if (!checkBattleState()) {
+                turnProcessor.runNext();
+              }
             })));
       });
     }
@@ -537,36 +634,93 @@ public class GameEngine {
     Player player = context.getPlayer();
     Enemy enemy = context.getEnemy();
 
-    ArrayList<StatusEffect> effects = new ArrayList<>(player.getStatusEffects());
-
-    if (effects.isEmpty()) {
-      // 🔸 Нету эффектов — просто сразу продолжаем ход
+    if (player.getStatusEffects().isEmpty()) {
       System.out.println("На игроке нет активных эффектов");
       processPlayerTurnWithoutEffects(turnProcessor, player, enemy);
       return;
     }
 
-    // 🔹 Есть эффекты — обрабатываем каждый
-    for (StatusEffect effect : effects) {
-      effect.onTurnStart(player);
+    // Используем универсальный метод обработки эффектов
+    processEntityEffects(player, turnProcessor, () -> processPlayerTurnWithoutEffects(turnProcessor, player, enemy));
+  }
 
+  private void processEntityEffects(Entity entity, TurnProcessor turnProcessor, Runnable onComplete) {
+    List<StatusEffect> allEffects = new ArrayList<>(entity.getStatusEffects());
+
+    List<StatusEffect> buffs = new ArrayList<>();
+    List<StatusEffect> debuffs = new ArrayList<>();
+
+    for (StatusEffect effect : allEffects) {
+      if (effect.isNegative()) {
+        debuffs.add(effect);
+      } else {
+        buffs.add(effect);
+      }
+    }
+
+    Runnable runNext = onComplete;
+
+    // Бафы
+    if (!buffs.isEmpty()) {
+      StatusEffect firstBuff = buffs.get(0);
       turnProcessor.addAction(() -> {
+        if (!entity.isAlive()) {
+          turnProcessor.runNext();
+          return;
+        }
+
+        for (StatusEffect effect : buffs) {
+          effect.onTurnStart(entity);
+        }
+
         context.getEventBus().emit(BattleEvent.of(
             BattleEventType.STATUS_EFFECT_TRIGGERED,
-            new StatusEffectPayload(player, effect, () -> {
-
-              if (!effect.tick(player)) {
-                effect.onRemove(player);
-                player.removeStatusEffect(effect);
+            new StatusEffectPayload(entity, firstBuff, () -> {
+              for (StatusEffect effect : buffs) {
+                if (!effect.tick(entity)) {
+                  effect.onRemove(entity);
+                  entity.removeStatusEffect(effect);
+                }
               }
-
-              if (checkBattleState())
-                return;
-
-              processPlayerTurnWithoutEffects(turnProcessor, player, enemy);
-              turnProcessor.runNext();
+              if (!checkBattleState()) {
+                runNext.run();
+              }
             })));
       });
+    }
+
+    // Дебафы
+    if (!debuffs.isEmpty()) {
+      StatusEffect firstDebuff = debuffs.get(0);
+      turnProcessor.addAction(() -> {
+        if (!entity.isAlive()) {
+          turnProcessor.runNext();
+          return;
+        }
+
+        for (StatusEffect effect : debuffs) {
+          effect.onTurnStart(entity);
+        }
+
+        context.getEventBus().emit(BattleEvent.of(
+            BattleEventType.STATUS_EFFECT_TRIGGERED,
+            new StatusEffectPayload(entity, firstDebuff, () -> {
+              for (StatusEffect effect : debuffs) {
+                if (!effect.tick(entity)) {
+                  effect.onRemove(entity);
+                  entity.removeStatusEffect(effect);
+                }
+              }
+              if (!checkBattleState()) {
+                runNext.run();
+              }
+            })));
+      });
+    }
+
+    // Если эффектов вообще нет (маловероятно, тут для безопасности)
+    if (buffs.isEmpty() && debuffs.isEmpty()) {
+      runNext.run();
     }
   }
 
