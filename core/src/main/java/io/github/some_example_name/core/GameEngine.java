@@ -66,6 +66,8 @@ public class GameEngine {
     int count = card.getCountTarget();
     boolean applied = false;
 
+    System.out.println("playCardOnTarget: " + target);
+
     // --- одиночная цель ---
     if (count == 0) {
       boolean validTarget;
@@ -73,6 +75,8 @@ public class GameEngine {
         case UNIT -> validTarget = target instanceof Slot;
         case ATTACK -> validTarget = target instanceof Enemy || target instanceof Player;
         case BUFF -> validTarget = target instanceof Unit;
+        case BUFF_FOR_ALL -> validTarget = target instanceof Unit || target instanceof Player;
+        case PLAYER -> validTarget = target instanceof Player;
         case DEBUFF -> validTarget = target instanceof Enemy;
         default -> validTarget = false;
       }

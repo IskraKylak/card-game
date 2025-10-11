@@ -26,9 +26,8 @@ public class RegenEffect extends AbstractStatusEffect {
   public void onTurnStart(Entity entity) {
     if (duration <= 0)
       return;
-    if (entity instanceof CombatEntity ce) {
-      ce.heal(healAmount);
-    }
+    entity.heal(healAmount);
+
   }
 
   @Override

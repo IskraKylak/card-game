@@ -51,7 +51,7 @@
     "description": "Даёт юниту +2 к атаке и восстанавливает 3 здоровья каждый ход в течение 2 ходов.",
     "cost": 3,
     "type": "BUFF",
-    "faction": "LIFE",
+    "faction": "DEATH",
     "effect": [
       {
         "type": "BuffEffect",
@@ -78,26 +78,26 @@
     "description": "Даёт юниту +2 к атаке",
     "cost": 2,
     "type": "BUFF",
-    "faction": "LIFE",
+    "faction": "DEATH",
     "effect": [
       {
         "type": "BuffEffect",
         "status": "AttackBuffEffect",
-        "value": 2,
+        "value": 3,
         "duration": 0,
         "targetingRule": 1
       }
     ],
     "image": "game/card-attackPower.png",
     "isBurnOnPlay": false,
-    "countTarget": 1
+    "countTarget": 0
   },
   {
     "id": 20,
     "name": "RegenEffect",
     "description": "Даёт юниту +3 к здоровью",
-    "cost": 3,
-    "type": "BUFF",
+    "cost": 2,
+    "type": "BUFF_FOR_ALL",
     "faction": "LIFE",
     "effect": [
       {
@@ -110,7 +110,7 @@
     ],
     "image": "game/card-attackPower.png",
     "isBurnOnPlay": false,
-    "countTarget":1
+    "countTarget": 0
   },
   {
     "id": 11,
@@ -118,7 +118,7 @@
     "description": "Отравляет врага",
     "cost": 3,
     "type": "DEBUFF",
-    "faction": "LIFE",
+    "faction": "DEATH",
     "effect": [
       { 
         "type": "DebuffEffect", 

@@ -5,4 +5,6 @@ public enum CardType {
   ATTACK,
   BUFF,
   DEBUFF,
+  BUFF_FOR_ALL,
+  PLAYER,
 }

@@ -20,6 +20,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import io.github.some_example_name.model.Card;
 import io.github.some_example_name.model.CardType;
 import io.github.some_example_name.model.Enemy;
+import io.github.some_example_name.model.Player;
 import io.github.some_example_name.model.Slot;
 import io.github.some_example_name.model.Unit;
 import io.github.some_example_name.ui.BattleScreenUI;
@@ -70,27 +71,49 @@ public class CardActor extends Table {
 
         boolean shouldHighlight = false;
 
-        // Для карт с countTarget > 0 — подсветка, если наведена на BoardUI
+        // --- получаем координаты центра карты на сцене ---
         Vector2 stageCoords = localToStageCoordinates(new Vector2(getWidth() / 2, getHeight() / 2));
+
+        // --- карты с countTarget > 0 (автоматический выбор целей) ---
         if (card.getCountTarget() > 0) {
           Object hovered = battleScreenUI.getBoardUI().hit(stageCoords.x, stageCoords.y, true);
           if (hovered != null) {
             shouldHighlight = true;
           }
-        } else {
-          // Для обычных карт проверяем цель под картой
+        }
+        // --- одиночное наведение на конкретную цель ---
+        else {
           Object target = battleScreenUI.getBoardUI().findTargetAt(stageCoords.x, stageCoords.y);
 
+          // --- юнит ---
           if (card.getType() == CardType.UNIT && target instanceof Slot slot && !slot.isOccupied()) {
             shouldHighlight = true;
           }
 
-          if ((card.getType() == CardType.ATTACK || card.getType() == CardType.DEBUFF) && target instanceof Enemy) {
+          // --- атака или дебафф (только враг) ---
+          if ((card.getType() == CardType.ATTACK || card.getType() == CardType.DEBUFF)
+              && target instanceof Enemy) {
             shouldHighlight = true;
           }
 
+          // --- бафф (только на юнитов) ---
           if (card.getType() == CardType.BUFF && target instanceof io.github.some_example_name.model.Unit unit
               && unit.isAlive()) {
+            shouldHighlight = true;
+          }
+
+          System.out.println("Target: " + target);
+          System.out.println("Card Type: " + card.getType());
+
+          // --- бафф для всех (юниты и игрок) ---
+          if (card.getType() == CardType.BUFF_FOR_ALL &&
+              ((target instanceof io.github.some_example_name.model.Unit u && u.isAlive())
+                  || target instanceof Player)) {
+            shouldHighlight = true;
+          }
+
+          // --- карты игрока (например, лечение, щиты и т.п.) ---
+          if (card.getType() == CardType.PLAYER && target instanceof Player) {
             shouldHighlight = true;
           }
         }
@@ -103,9 +126,10 @@ public class CardActor extends Table {
         Vector2 stageCoords = localToStageCoordinates(new Vector2(getWidth() / 2, getHeight() / 2));
 
         if (card.getCountTarget() > 0) {
-          // Просто кидаем на BoardUI — Engine выберет случайные цели
+          // --- карты с автоматическим выбором целей ---
           battleScreenUI.onCardDropped(CardActor.this, -1, -1);
         } else {
+          // --- обычные карты: передаём конкретные координаты ---
           battleScreenUI.onCardDropped(CardActor.this, stageCoords.x, stageCoords.y);
         }
 

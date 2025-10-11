@@ -398,15 +398,15 @@ public class BattleScreenUI extends ScreenAdapter {
   public void onCardDropped(CardActor cardActor, float stageX, float stageY) {
     cardActor.setHighlighted(false);
     Card card = cardActor.getCard();
-
-    boolean success;
+    boolean success = false;
 
     if (card.getCountTarget() > 0) {
-      // Для карт с countTarget > 0 передаем любую заглушку, т.к. Engine сам выберет
-      // рандомные цели
+      // Карты с множественными целями — движок сам решит, куда применить
       success = engine.playCardOnTarget(card, null);
     } else {
+      // Проверяем, на кого навел игрок
       Targetable target = boardUI.findTargetAt(stageX, stageY);
+
       success = engine.playCardOnTarget(card, target);
     }
 

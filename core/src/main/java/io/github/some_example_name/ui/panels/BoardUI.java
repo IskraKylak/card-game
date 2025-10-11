@@ -134,6 +134,13 @@ public class BoardUI extends Table {
       return context.getEnemy(); // <- возвращаем Enemy как цель
     }
 
+    // 4) Проверка попадания в игрока
+    Vector2 playerPos = playerUI.localToStageCoordinates(new Vector2(0, 0));
+    if (stageX >= playerPos.x && stageX <= playerPos.x + playerUI.getWidth() &&
+        stageY >= playerPos.y && stageY <= playerPos.y + playerUI.getHeight()) {
+      return context.getPlayer(); // возвращаем Player как цель
+    }
+
     return null;
   }
 
