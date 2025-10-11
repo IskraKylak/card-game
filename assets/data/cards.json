@@ -76,7 +76,7 @@
     "id": 20,
     "name": "AttackPower",
     "description": "Даёт юниту +2 к атаке",
-    "cost": 3,
+    "cost": 2,
     "type": "BUFF",
     "faction": "LIFE",
     "effect": [
@@ -110,7 +110,7 @@
     ],
     "image": "game/card-attackPower.png",
     "isBurnOnPlay": false,
-    "countTarget": 2
+    "countTarget":1
   },
   {
     "id": 11,

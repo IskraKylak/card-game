@@ -634,93 +634,111 @@ public class GameEngine {
     Player player = context.getPlayer();
     Enemy enemy = context.getEnemy();
 
-    if (player.getStatusEffects().isEmpty()) {
+    ArrayList<StatusEffect> effects = new ArrayList<>(player.getStatusEffects());
+
+    if (effects.isEmpty()) {
+      // 🔸 Нету эффектов — просто сразу продолжаем ход
       System.out.println("На игроке нет активных эффектов");
       processPlayerTurnWithoutEffects(turnProcessor, player, enemy);
       return;
     }
 
-    // Используем универсальный метод обработки эффектов
-    processEntityEffects(player, turnProcessor, () -> processPlayerTurnWithoutEffects(turnProcessor, player, enemy));
+    // Есть эффекты — обрабатываем их группами (баффы/дебафы).
+    // Когда все группы отработают, в onAllEffectsComplete вызовем
+    // processPlayerTurnWithoutEffects.
+    processEntityEffects(player, turnProcessor, () -> {
+      processPlayerTurnWithoutEffects(turnProcessor, player, enemy);
+    });
   }
 
-  private void processEntityEffects(Entity entity, TurnProcessor turnProcessor, Runnable onComplete) {
-    List<StatusEffect> allEffects = new ArrayList<>(entity.getStatusEffects());
+  private void processEntityEffects(Entity entity, TurnProcessor turnProcessor, Runnable onAllEffectsComplete) {
+    List<StatusEffect> all = new ArrayList<>(entity.getStatusEffects());
 
+    // Разделим на баффы и дебафы
     List<StatusEffect> buffs = new ArrayList<>();
     List<StatusEffect> debuffs = new ArrayList<>();
-
-    for (StatusEffect effect : allEffects) {
-      if (effect.isNegative()) {
-        debuffs.add(effect);
-      } else {
-        buffs.add(effect);
-      }
+    for (StatusEffect e : all) {
+      if (e == null)
+        continue;
+      if (e.isNegative())
+        debuffs.add(e);
+      else
+        buffs.add(e);
     }
 
-    Runnable runNext = onComplete;
-
-    // Бафы
-    if (!buffs.isEmpty()) {
-      StatusEffect firstBuff = buffs.get(0);
-      turnProcessor.addAction(() -> {
-        if (!entity.isAlive()) {
-          turnProcessor.runNext();
-          return;
-        }
-
-        for (StatusEffect effect : buffs) {
-          effect.onTurnStart(entity);
-        }
-
-        context.getEventBus().emit(BattleEvent.of(
-            BattleEventType.STATUS_EFFECT_TRIGGERED,
-            new StatusEffectPayload(entity, firstBuff, () -> {
-              for (StatusEffect effect : buffs) {
-                if (!effect.tick(entity)) {
-                  effect.onRemove(entity);
-                  entity.removeStatusEffect(effect);
-                }
-              }
-              if (!checkBattleState()) {
-                runNext.run();
-              }
-            })));
-      });
-    }
-
-    // Дебафы
-    if (!debuffs.isEmpty()) {
-      StatusEffect firstDebuff = debuffs.get(0);
-      turnProcessor.addAction(() -> {
-        if (!entity.isAlive()) {
-          turnProcessor.runNext();
-          return;
-        }
-
-        for (StatusEffect effect : debuffs) {
-          effect.onTurnStart(entity);
-        }
-
-        context.getEventBus().emit(BattleEvent.of(
-            BattleEventType.STATUS_EFFECT_TRIGGERED,
-            new StatusEffectPayload(entity, firstDebuff, () -> {
-              for (StatusEffect effect : debuffs) {
-                if (!effect.tick(entity)) {
-                  effect.onRemove(entity);
-                  entity.removeStatusEffect(effect);
-                }
-              }
-              if (!checkBattleState()) {
-                runNext.run();
-              }
-            })));
-      });
-    }
-
-    // Если эффектов вообще нет (маловероятно, тут для безопасности)
+    // Если вообще нет эффектов — сразу выполняем onAllEffectsComplete и
+    // возвращаемся
     if (buffs.isEmpty() && debuffs.isEmpty()) {
-      runNext.run();
+      onAllEffectsComplete.run();
+      return;
+    }
+
+    // Соберём непустые группы в список, чтобы добавить их в очередь в порядке:
+    // баффы -> дебафы
+    List<List<StatusEffect>> groups = new ArrayList<>();
+    if (!buffs.isEmpty())
+      groups.add(buffs);
+    if (!debuffs.isEmpty())
+      groups.add(debuffs);
+
+    for (int gi = 0; gi < groups.size(); gi++) {
+      List<StatusEffect> group = groups.get(gi);
+      boolean isLastGroup = (gi == groups.size() - 1);
+      // Сохраняем локальные final-переменные для лямбды
+      final List<StatusEffect> currentGroup = group;
+      final boolean isLast = isLastGroup;
+
+      turnProcessor.addAction(() -> {
+        if (!entity.isAlive()) {
+          turnProcessor.runNext();
+          return;
+        }
+
+        // Сначала вызываем onTurnStart для каждой эффекта в группе
+        for (StatusEffect eff : currentGroup) {
+          try {
+            eff.onTurnStart(entity);
+          } catch (Exception ex) {
+            ex.printStackTrace();
+          }
+        }
+
+        // Для анимации/UI передаём representative effect (первый в группе)
+        StatusEffect representative = currentGroup.get(0);
+
+        context.getEventBus().emit(BattleEvent.of(
+            BattleEventType.STATUS_EFFECT_TRIGGERED,
+            new StatusEffectPayload(entity, representative, () -> {
+              // Этот callback будет вызван UI после окончания анимации
+              // Применяем tick() и удаляем просроченные эффекты
+              for (StatusEffect eff : new ArrayList<>(currentGroup)) {
+                try {
+                  if (!eff.tick(entity)) {
+                    eff.onRemove(entity);
+                    entity.removeStatusEffect(eff);
+                  }
+                } catch (Exception ex) {
+                  ex.printStackTrace();
+                }
+              }
+
+              // Если кто-то умер — прерываем (не продолжаем очередь)
+              if (checkBattleState())
+                return;
+
+              // Если это последняя группа — вызываем onAllEffectsComplete (без runNext!)
+              if (isLast) {
+                try {
+                  onAllEffectsComplete.run();
+                } catch (Exception ex) {
+                  ex.printStackTrace();
+                }
+              }
+
+              // Продолжаем очередь
+              turnProcessor.runNext();
+            })));
+      });
     }
   }
 
